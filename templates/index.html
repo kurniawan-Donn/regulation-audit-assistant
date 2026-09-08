@@ -1,0 +1,1791 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Regulation to IT Audit Assistant</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        :root {
+            --navy: #1E2761;
+            --navy-dark: #141B4D;
+            --navy-light: #2D3A8C;
+            --ice: #E8EFFC;
+            --done: #2F8F5B;
+            --done-bg: #E3F3EA;
+            --warn: #B85042;
+            --warn-bg: #FBEAE8;
+            --muted: #6B7280;
+            --border: #D9E0F0;
+            --bg: #F7F9FC;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --text: #2B2E3A;
+            --shadow: 0 4px 24px rgba(30, 39, 97, 0.08);
+            --shadow-lg: 0 12px 48px rgba(30, 39, 97, 0.15);
+            --radius: 14px;
+            --radius-sm: 8px;
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --gradient: linear-gradient(135deg, #1E2761 0%, #3B4B9E 50%, #5A6FD6 100%);
+            --gradient-accent: linear-gradient(135deg, #2F8F5B 0%, #38B673 100%);
+            --gradient-warn: linear-gradient(135deg, #B85042 0%, #D4766A 100%);
+            --font: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+            --chart-size: 120px;
+            --navy-rgb: 30, 39, 97;
+        }
+
+        [data-theme="dark"] {
+            --navy: #4A5FC1;
+            --navy-dark: #0D1128;
+            --navy-light: #6B7FE0;
+            --ice: #1A2240;
+            --done: #4CAF7D;
+            --done-bg: #1A2E24;
+            --warn: #E07B6A;
+            --warn-bg: #3A1E1A;
+            --muted: #9CA3AF;
+            --border: #2E3A5C;
+            --bg: #0A0E1A;
+            --card-bg: rgba(18, 24, 48, 0.85);
+            --text: #E5E9F5;
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.6);
+            --gradient: linear-gradient(135deg, #0D1128 0%, #1E2761 50%, #3B4B9E 100%);
+            --ice: #1E2A4A;
+            --navy-rgb: 74, 95, 193;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font);
+            color: var(--text);
+            margin: 0;
+            padding: 0 0 3rem 0;
+            transition: background var(--transition), color var(--transition);
+            min-height: 100vh;
+            overflow-x: hidden;
+            /* properti lain tetap ada */
+            background-color: var(--bg);
+            background-image: url('/static/bg.png');
+            background-size: cover;                  /* agar menutupi seluruh layar */
+            background-position: center;             /* posisi gambar di tengah */
+            background-attachment: fixed;            /* gambar tetap saat scroll */
+            background-repeat: no-repeat;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.3); /* atau rgba(0,0,0,0.4) untuk gelap */
+            z-index: -1;
+        }
+
+        /* ============ HEADER ============ */
+        header {
+            background: var(--gradient);
+            color: white;
+            padding: 2rem 2.5rem 1.8rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+        }
+        header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 400px;
+            height: 400px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            animation: floatOrb 12s infinite ease-in-out;
+        }
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: 20%;
+            width: 300px;
+            height: 300px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 50%;
+            animation: floatOrb 15s infinite ease-in-out reverse;
+        }
+        @keyframes floatOrb {
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+            33% {
+                transform: translate(30px, -20px) scale(1.1);
+            }
+            66% {
+                transform: translate(-20px, 15px) scale(0.95);
+            }
+        }
+        .header-content {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+        }
+        .header-icon {
+            width: 56px;
+            height: 56px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            flex-shrink: 0;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 1.6rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            line-height: 1.2;
+        }
+        header p {
+            margin: 0.3rem 0 0 0;
+            color: rgba(232, 239, 252, 0.85);
+            font-size: 0.9rem;
+            font-weight: 400;
+        }
+        .header-actions {
+            display: flex;
+            gap: 0.6rem;
+            align-items: center;
+        }
+        .header-btn {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            padding: 0.55rem 1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: background var(--transition);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+        .header-btn.active {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* ============ MAIN LAYOUT ============ */
+        main {
+            max-width: 1100px;
+            margin: 1.5rem auto;
+            padding: 0 1.5rem;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.8rem;
+            box-shadow: var(--shadow);
+            transition: background var(--transition), border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+            animation: fadeInUp 0.5s ease-out;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px); /* untuk Safari */
+        }
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* ============ UPLOAD ZONE ============ */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 2.5rem 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition);
+            background: var(--bg);
+            position: relative;
+            margin-bottom: 1.2rem;
+        }
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: var(--navy);
+            background: rgba(var(--navy-rgb), 0.04);
+            transform: scale(1.01);
+        }
+        .upload-zone.dragover {
+            border-style: solid;
+            box-shadow: 0 0 0 4px rgba(var(--navy-rgb), 0.15);
+        }
+        .upload-zone .upload-icon {
+            font-size: 3rem;
+            color: var(--navy);
+            margin-bottom: 0.8rem;
+            opacity: 0.7;
+        }
+        .upload-zone p {
+            margin: 0.3rem 0;
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+        .upload-zone .file-name-display {
+            font-weight: 600;
+            color: var(--navy);
+            margin-top: 0.6rem;
+            font-size: 0.95rem;
+        }
+        .upload-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* ============ FORM ELEMENTS ============ */
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+            font-size: 0.85rem;
+            letter-spacing: 0.02em;
+            color: var(--muted);
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.08em;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 0.7rem 1rem;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            margin-bottom: 1.2rem;
+            background: var(--bg);
+            color: var(--text);
+            transition: border-color var(--transition), box-shadow var(--transition);
+            font-family: var(--font);
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--navy);
+            box-shadow: 0 0 0 3px rgba(var(--navy-rgb), 0.12);
+        }
+
+        .btn {
+            padding: 0.75rem 1.6rem;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: var(--font);
+            letter-spacing: 0.02em;
+            text-decoration: none;
+        }
+        .btn:active {
+            transform: scale(0.97);
+        }
+        .btn-primary {
+            background: var(--gradient);
+            color: white;
+            box-shadow: 0 4px 16px rgba(var(--navy-rgb), 0.3);
+        }
+        .btn-primary:hover:not(:disabled) {
+            box-shadow: 0 6px 24px rgba(var(--navy-rgb), 0.45);
+            transform: translateY(-2px);
+        }
+        .btn-primary:disabled {
+            background: #9AA9C7;
+            box-shadow: none;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .btn-secondary {
+            background: var(--card-bg);
+            color: var(--navy);
+            border: 1.5px solid var(--navy);
+        }
+        .btn-secondary:hover:not(:disabled) {
+            background: var(--ice);
+            transform: translateY(-2px);
+        }
+        .btn-success {
+            background: var(--gradient-accent);
+            color: white;
+            box-shadow: 0 4px 16px rgba(47, 143, 91, 0.3);
+        }
+        .btn-success:hover:not(:disabled) {
+            box-shadow: 0 6px 24px rgba(47, 143, 91, 0.45);
+            transform: translateY(-2px);
+        }
+        .btn-danger {
+            background: var(--gradient-warn);
+            color: white;
+            box-shadow: 0 4px 16px rgba(184, 80, 66, 0.3);
+        }
+        .btn-danger:hover:not(:disabled) {
+            box-shadow: 0 6px 24px rgba(184, 80, 66, 0.45);
+            transform: translateY(-2px);
+        }
+        .btn-sm {
+            padding: 0.45rem 0.9rem;
+            font-size: 0.8rem;
+            border-radius: 8px;
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* ============ PRIVACY NOTE ============ */
+        .privacy-note {
+            background: var(--ice);
+            border-radius: 10px;
+            padding: 0.8rem 1.2rem;
+            font-size: 0.85rem;
+            color: #f4b9ab;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            border-left: 4px solid var(--navy);
+            transition: background var(--transition), color var(--transition);
+        }
+        .privacy-note i {
+            font-size: 1.1rem;
+            color: #f35531;
+        }
+
+        /* ============ STATUS & PROGRESS ============ */
+        #status {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: color var(--transition);
+        }
+        #status.error {
+            color: var(--warn);
+            font-weight: 600;
+        }
+        #status.success {
+            color: var(--done);
+            font-weight: 600;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2.5px solid var(--border);
+            border-top-color: var(--navy);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            margin-right: 0.3rem;
+            flex-shrink: 0;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .progress-container {
+            display: none;
+            margin-top: 1.2rem;
+            background: var(--bg);
+            border-radius: 10px;
+            overflow: hidden;
+            height: 8px;
+            border: 1px solid var(--border);
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: var(--gradient);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            position: relative;
+        }
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%);
+            }
+            100% {
+                transform: translateX(100%);
+            }
+        }
+        .progress-text {
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-top: 0.5rem;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        /* ============ RESULT SECTION ============ */
+        #resultSection {
+            display: none;
+            animation: fadeInUp 0.6s ease-out;
+        }
+        #resultSection.visible {
+            display: block;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .result-header h2 {
+            margin: 0;
+            font-size: 1.3rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+        }
+        .result-header h2 i {
+            color: var(--navy);
+            font-size: 1.2rem;
+        }
+
+        /* ============ SUMMARY ============ */
+        .summary-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 1.2rem 1.1rem;
+            font-size: 0.8rem;
+            color: var(--muted);
+            text-align: center;
+            border: 1px solid var(--border);
+            transition: all var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        .stat::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient);
+            opacity: 0.6;
+        }
+        .stat:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow);
+        }
+        .stat strong {
+            display: block;
+            font-size: 1.8rem;
+            color: var(--navy);
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 0.2rem;
+        }
+        .stat span {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+        .stat-valid strong {
+            color: var(--done);
+        }
+        .stat-flagged strong {
+            color: var(--warn);
+        }
+
+        /* ============ CHART ============ */
+        .chart-container {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .donut-chart {
+            width: var(--chart-size);
+            height: var(--chart-size);
+            border-radius: 50%;
+            position: relative;
+            flex-shrink: 0;
+        }
+        .donut-chart .donut-inner {
+            position: absolute;
+            inset: 20%;
+            background: var(--card-bg);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--text);
+            transition: background var(--transition);
+        }
+        .chart-legend {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+        }
+        .chart-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .chart-legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+        .chart-legend-dot.valid {
+            background: var(--done);
+        }
+        .chart-legend-dot.flagged {
+            background: var(--warn);
+        }
+
+        /* ============ SEARCH & FILTER ============ */
+.toolbar {
+    display: flex;
+    gap: 0.8rem;
+    align-items: center;
+    /* Ubah flex-wrap menjadi nowrap agar tidak pernah turun ke bawah */
+    flex-wrap: nowrap; 
+    margin-bottom: 1rem;
+    width: 100%;
+}
+
+.search-box {
+    position: relative;
+    flex: 1;
+    /* Kecilkan min-width agar fleksibel di layar kecil tanpa memaksa wrap */
+    min-width: 120px; 
+}
+
+.search-box input {
+    width: 100%;
+    padding: 0.6rem 1rem 0.6rem 2.5rem;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 0.85rem;
+    background: var(--bg);
+    color: var(--text);
+    transition: border-color var(--transition);
+    font-family: var(--font);
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: var(--navy);
+    box-shadow: 0 0 0 3px rgba(var(--navy-rgb), 0.1);
+}
+
+.search-box i {
+    position: absolute;
+    left: 0.9rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+        .filter-btns {
+            display: flex;
+            gap: 0.5rem;
+            flex-shrink: 0; /* Mencegah tombol gepeng/mengkerut */
+            white-space: nowrap; /* Menjaga teks tombol tetap 1 baris */
+        }
+        .filter-btn {
+            padding: 0.45rem 0.9rem;
+            border-radius: 8px;
+            border: 1.5px solid var(--border);
+            background: var(--card-bg);
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all var(--transition);
+            font-family: var(--font);
+        }
+        .filter-btn:hover {
+            border-color: var(--navy);
+            color: var(--navy);
+        }
+        .filter-btn.active {
+            background: var(--navy);
+            color: white;
+            border-color: var(--navy);
+        }
+
+        /* ============ TABLE ============ */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+            min-width: 800px;
+        }
+        th,
+        td {
+            border: 1px solid var(--border);
+            padding: 0.65rem 0.75rem;
+            text-align: left;
+            vertical-align: top;
+            transition: background var(--transition);
+        }
+        th {
+            background: var(--ice);
+            color: var(--navy);
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.05em;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        tbody tr {
+            transition: background var(--transition), transform var(--transition);
+        }
+        tbody tr:hover {
+            background: rgba(var(--navy-rgb), 0.04);
+        }
+        tr.flagged {
+            background: var(--warn-bg);
+        }
+        tr.flagged:hover {
+            background: rgba(184, 80, 66, 0.1);
+        }
+        tr.valid-row {
+            background: transparent;
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+        }
+        .badge.valid {
+            background: var(--done-bg);
+            color: var(--done);
+        }
+        .badge.flagged {
+            background: var(--warn-bg);
+            color: var(--warn);
+        }
+        .notes {
+            font-size: 0.7rem;
+            color: var(--warn);
+            margin-top: 0.3rem;
+            line-height: 1.3;
+        }
+        .row-actions {
+            display: flex;
+            gap: 0.3rem;
+            align-items: center;
+        }
+        .row-action-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            transition: all var(--transition);
+            background: transparent;
+            color: var(--muted);
+        }
+        .row-action-btn:hover {
+            background: var(--ice);
+            color: var(--navy);
+        }
+        .row-action-btn.delete:hover {
+            background: var(--warn-bg);
+            color: var(--warn);
+        }
+
+        /* ============ CHUNK ERRORS ============ */
+        .chunk-errors {
+            background: var(--warn-bg);
+            border-radius: 10px;
+            padding: 1rem 1.2rem;
+            font-size: 0.85rem;
+            color: var(--warn);
+            margin-bottom: 1.2rem;
+            border-left: 4px solid var(--warn);
+            animation: fadeIn 0.4s ease;
+        }
+        .chunk-errors ul {
+            margin: 0.5rem 0 0 1.2rem;
+            padding: 0;
+        }
+        .chunk-errors li {
+            margin-bottom: 0.3rem;
+        }
+
+        /* ============ HISTORY SIDEBAR ============ */
+        .history-panel {
+            position: fixed;
+            top: 0;
+            right: -420px;
+            width: 400px;
+            max-width: 90vw;
+            height: 100vh;
+            background: var(--card-bg);
+            border-left: 1px solid var(--border);
+            box-shadow: -8px 0 40px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .history-panel.open {
+            right: 0;
+        }
+        .history-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .history-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .history-header {
+            padding: 1.2rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg);
+        }
+        .history-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .history-close {
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 1.3rem;
+            cursor: pointer;
+            padding: 0.3rem;
+            border-radius: 8px;
+            transition: color var(--transition);
+        }
+        .history-close:hover {
+            color: var(--warn);
+        }
+        .history-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+        .history-empty {
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.9rem;
+            padding: 3rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+        .history-empty i {
+            font-size: 3rem;
+            opacity: 0.4;
+        }
+        .history-item {
+            background: var(--bg);
+            border-radius: 10px;
+            padding: 1rem 1.2rem;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all var(--transition);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        .history-item:hover {
+            border-color: var(--navy);
+            transform: translateX(-3px);
+        }
+        .history-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .history-item-name {
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 0.2rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .history-item-meta {
+            font-size: 0.7rem;
+            color: var(--muted);
+            display: flex;
+            gap: 0.8rem;
+        }
+        .history-item-delete {
+            background: none;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            padding: 0.3rem;
+            border-radius: 6px;
+            transition: all var(--transition);
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+        .history-item-delete:hover {
+            color: var(--warn);
+            background: var(--warn-bg);
+        }
+        .history-clear-all {
+            margin: 0.5rem 1rem 1rem;
+            padding: 0.6rem;
+            border-radius: 8px;
+            border: 1px solid var(--warn);
+            color: var(--warn);
+            background: transparent;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all var(--transition);
+            font-family: var(--font);
+        }
+        .history-clear-all:hover {
+            background: var(--warn-bg);
+        }
+
+        /* ============ TOAST ============ */
+        .toast-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+        .toast {
+            padding: 0.9rem 1.4rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: white;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            animation: toastIn 0.4s ease-out, toastOut 0.4s ease-in 3.5s forwards;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            max-width: 380px;
+        }
+        .toast-success {
+            background: var(--gradient-accent);
+        }
+        .toast-error {
+            background: var(--gradient-warn);
+        }
+        .toast-info {
+            background: var(--gradient);
+        }
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        @keyframes toastOut {
+            from {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(10px) scale(0.95);
+            }
+        }
+
+        /* ============ EMPTY STATE ============ */
+        .empty-state {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: var(--muted);
+            display: none;
+        }
+        .empty-state i {
+            font-size: 2.5rem;
+            opacity: 0.3;
+            margin-bottom: 0.8rem;
+        }
+        .empty-state p {
+            font-size: 0.9rem;
+        }
+
+        /* ============ RESPONSIVE ============ */
+        @media (max-width: 768px) {
+            header {
+                padding: 1.2rem 1.2rem;
+            }
+            header h1 {
+                font-size: 1.2rem;
+            }
+            .header-icon {
+                width: 44px;
+                height: 44px;
+                font-size: 1.2rem;
+            }
+            main {
+                padding: 0 1rem;
+                margin: 1rem auto;
+            }
+            .card {
+                padding: 1.2rem;
+            }
+            .summary-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .chart-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            .history-panel {
+                width: 100%;
+                right: -100%;
+            }
+            .btn {
+                padding: 0.65rem 1.2rem;
+                font-size: 0.85rem;
+            }
+        }
+        @media (max-width: 480px) {
+            .summary-row {
+                grid-template-columns: 1fr 1fr;
+            }
+            .stat strong {
+                font-size: 1.4rem;
+            }
+            .header-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Overlay untuk history -->
+    <div class="history-overlay" id="historyOverlay"></div>
+
+    <header>
+        <div class="header-content">
+            <div class="header-left">
+                <div class="header-icon">
+                    <i class="fas fa-file-shield"></i>
+                </div>
+                <div>
+                    <h1>Regulation to IT Audit Assistant</h1>
+                    <p>Ubah ketentuan regulasi menjadi prosedur pemeriksaan audit TI secara otomatis</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="header-btn" id="themeToggle" title="Ganti tema">
+                    <i class="fas fa-moon"></i> <span id="themeLabel">Dark</span>
+                </button>
+                <button class="header-btn" id="historyToggle" title="Riwayat analisis">
+                    <i class="fas fa-clock-rotate-left"></i> Riwayat
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Card Upload -->
+        <div class="card" id="uploadCard">
+            <div class="privacy-note">
+                <i class="fas fa-lock"></i>
+                Hallo-halo (～￣▽￣)～ gunakan dokumen regulasi publik ya. Jangan mengunggah dokumen rahasia atau data sensitif (nanti ku Intip Loh) []~(￣▽￣)~*
+            </div>
+
+            <form id="uploadForm" enctype="multipart/form-data">
+                <label for="fileInput">Upload Regulasi (PDF atau TXT)</label>
+                <div class="upload-zone" id="uploadZone">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-arrow-up"></i>
+                    </div>
+                    <p><strong>Klik untuk pilih file</strong> atau seret &amp; letakkan di sini</p>
+                    <p style="font-size:0.75rem; margin-top:0.2rem;">Format: PDF, TXT &bull; Maks 10MB</p>
+                    <div class="file-name-display" id="fileNameDisplay"></div>
+                    <input type="file" id="fileInput" name="file" accept=".pdf,.txt" required />
+                </div>
+
+                <label for="namaRegulasi">Nama Regulasi (opsional)</label>
+                <input type="text" id="namaRegulasi" name="nama_regulasi" placeholder="mis. POJK 11/POJK.03/2022" />
+
+                <div style="display:flex; gap:0.8rem; flex-wrap:wrap;">
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <i class="fas fa-robot"></i> Analisis Regulasi
+                    </button>
+                    <button type="button" class="btn btn-danger btn-sm" id="resetBtn" style="margin-left:auto;">
+                        <i class="fas fa-trash"></i> Bersihkan
+                    </button>
+                </div>
+            </form>
+
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="progress-text" id="progressText"></div>
+
+            <div id="status">Menunggu file...</div>
+        </div>
+
+        <!-- Card Hasil -->
+        <div id="resultSection" class="card">
+            <div class="result-header">
+                <h2><i class="fas fa-chart-simple"></i> Hasil Analisis</h2>
+                <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+                    <button class="btn btn-success btn-sm" id="exportBtn" disabled>
+                        <i class="fas fa-file-excel"></i> Export Excel
+                    </button>
+                    <button class="btn btn-secondary btn-sm" id="copyBtn" disabled>
+                        <i class="fas fa-copy"></i> Salin
+                    </button>
+                    <button class="btn btn-danger btn-sm" id="clearResultBtn">
+                        <i class="fas fa-xmark"></i> Tutup Hasil
+                    </button>
+                </div>
+            </div>
+
+            <div id="chunkErrorsBox" class="chunk-errors" style="display:none;"></div>
+
+            <!-- Summary & Chart -->
+            <div class="summary-row" id="summaryRow"></div>
+            <div class="chart-container" id="chartContainer" style="display:none;">
+                <div class="donut-chart" id="donutChart">
+                    <div class="donut-inner" id="donutInner">0%</div>
+                </div>
+                <div class="chart-legend" id="chartLegend"></div>
+            </div>
+
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Cari ketentuan, pemeriksaan, referensi..." />
+                </div>
+                <div class="filter-btns">
+                    <button class="filter-btn active" data-filter="all">Semua</button>
+                    <button class="filter-btn" data-filter="valid">Valid</button>
+                    <button class="filter-btn" data-filter="flagged">Ditinjau</button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:3%">No</th>
+                            <th style="width:13%">Referensi</th>
+                            <th style="width:12%">BAB/Pasal/Ayat</th>
+                            <th style="width:26%">Point/Ketentuan</th>
+                            <th style="width:31%">Pemeriksaan</th>
+                            <th style="width:9%">Status</th>
+                            <th style="width:6%">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultBody"></tbody>
+                </table>
+            </div>
+            <div class="empty-state" id="emptyState">
+                <i class="fas fa-inbox"></i>
+                <p>Tidak ada data yang cocok dengan pencarian/filter.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- History Panel -->
+    <div class="history-panel" id="historyPanel">
+        <div class="history-header">
+            <h3><i class="fas fa-clock-rotate-left"></i> Riwayat Analisis</h3>
+            <button class="history-close" id="historyClose"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="history-list" id="historyList"></div>
+        <button class="history-clear-all" id="historyClearAll">
+            <i class="fas fa-trash-can"></i> Hapus Semua Riwayat
+        </button>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        (function() {
+            // ====== STATE ======
+            const state = {
+                currentResultId: null,
+                currentData: null,
+                filter: 'all',
+                searchQuery: '',
+                theme: localStorage.getItem('rta_theme') || 'light',
+                history: JSON.parse(localStorage.getItem('rta_history') || '[]'),
+                isAnalyzing: false,
+            };
+
+            // ====== DOM REFS ======
+            const $ = (sel) => document.querySelector(sel);
+            const $$ = (sel) => document.querySelectorAll(sel);
+
+            const form = $('#uploadForm');
+            const statusEl = $('#status');
+            const submitBtn = $('#submitBtn');
+            const resultSection = $('#resultSection');
+            const resultBody = $('#resultBody');
+            const summaryRow = $('#summaryRow');
+            const chunkErrorsBox = $('#chunkErrorsBox');
+            const exportBtn = $('#exportBtn');
+            const copyBtn = $('#copyBtn');
+            const clearResultBtn = $('#clearResultBtn');
+            const resetBtn = $('#resetBtn');
+            const fileInput = $('#fileInput');
+            const uploadZone = $('#uploadZone');
+            const fileNameDisplay = $('#fileNameDisplay');
+            const searchInput = $('#searchInput');
+            const filterBtns = $$('.filter-btn');
+            const emptyState = $('#emptyState');
+            const progressContainer = $('#progressContainer');
+            const progressBar = $('#progressBar');
+            const progressText = $('#progressText');
+            const chartContainer = $('#chartContainer');
+            const donutChart = $('#donutChart');
+            const donutInner = $('#donutInner');
+            const chartLegend = $('#chartLegend');
+            const themeToggle = $('#themeToggle');
+            const themeLabel = $('#themeLabel');
+            const historyToggle = $('#historyToggle');
+            const historyPanel = $('#historyPanel');
+            const historyOverlay = $('#historyOverlay');
+            const historyClose = $('#historyClose');
+            const historyList = $('#historyList');
+            const historyClearAll = $('#historyClearAll');
+            const toastContainer = $('#toastContainer');
+
+            // ====== THEME ======
+            function applyTheme(theme) {
+                document.documentElement.setAttribute('data-theme', theme);
+                state.theme = theme;
+                localStorage.setItem('rta_theme', theme);
+                const icon = theme === 'dark' ? 'fa-sun' : 'fa-moon';
+                const label = theme === 'dark' ? 'Light' : 'Dark';
+                themeToggle.innerHTML =
+                    `<i class="fas ${icon}"></i> <span id="themeLabel">${label}</span>`;
+                updateDonutChart();
+            }
+            themeToggle.addEventListener('click', () => {
+                applyTheme(state.theme === 'dark' ? 'light' : 'dark');
+            });
+            applyTheme(state.theme);
+
+            // ====== TOAST ======
+            function showToast(message, type = 'info') {
+                const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle' };
+                const toast = document.createElement('div');
+                toast.className = `toast toast-${type}`;
+                toast.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i> ${message}`;
+                toastContainer.appendChild(toast);
+                setTimeout(() => toast.remove(), 4000);
+            }
+
+            // ====== HISTORY PANEL ======
+            function openHistory() {
+                historyPanel.classList.add('open');
+                historyOverlay.classList.add('visible');
+                renderHistory();
+            }
+            function closeHistory() {
+                historyPanel.classList.remove('open');
+                historyOverlay.classList.remove('visible');
+            }
+            historyToggle.addEventListener('click', openHistory);
+            historyClose.addEventListener('click', closeHistory);
+            historyOverlay.addEventListener('click', closeHistory);
+
+            function saveToHistory(data) {
+                const entry = {
+                    id: data.result_id || Date.now().toString(36),
+                    nama: data.nama_regulasi || 'Tanpa Nama',
+                    tanggal: new Date().toISOString(),
+                    total_ketentuan: data.total_ketentuan || 0,
+                    total_valid: data.total_valid || 0,
+                    total_flagged: data.total_flagged || 0,
+                    results: data.results || [],
+                    chunk_errors: data.chunk_errors || [],
+                };
+                // Hindari duplikat
+                state.history = state.history.filter(h => h.id !== entry.id);
+                state.history.unshift(entry);
+                // Batasi 50 entri
+                if (state.history.length > 50) state.history = state.history.slice(0, 50);
+                localStorage.setItem('rta_history', JSON.stringify(state.history));
+                renderHistory();
+            }
+
+            function deleteHistoryItem(id) {
+                state.history = state.history.filter(h => h.id !== id);
+                localStorage.setItem('rta_history', JSON.stringify(state.history));
+                renderHistory();
+                showToast('Riwayat dihapus.', 'success');
+            }
+
+            function clearAllHistory() {
+                if (state.history.length === 0) return;
+                if (confirm('Hapus semua riwayat analisis?')) {
+                    state.history = [];
+                    localStorage.setItem('rta_history', JSON.stringify(state.history));
+                    renderHistory();
+                    showToast('Semua riwayat dihapus.', 'success');
+                }
+            }
+            historyClearAll.addEventListener('click', clearAllHistory);
+
+            function renderHistory() {
+                if (state.history.length === 0) {
+                    historyList.innerHTML = `
+                <div class="history-empty">
+                  <i class="fas fa-folder-open"></i>
+                  <p>Belum ada riwayat analisis.</p>
+                </div>`;
+                    return;
+                }
+                historyList.innerHTML = state.history.map(h => `
+              <div class="history-item" data-id="${h.id}">
+                <div class="history-item-info" onclick="window.__loadHistory('${h.id}')">
+                  <div class="history-item-name">${h.nama}</div>
+                  <div class="history-item-meta">
+                    <span><i class="fas fa-list"></i> ${h.total_ketentuan} ketentuan</span>
+                    <span><i class="fas fa-check-circle" style="color:var(--done)"></i> ${h.total_valid}</span>
+                    <span><i class="fas fa-exclamation-triangle" style="color:var(--warn)"></i> ${h.total_flagged}</span>
+                    <span>${new Date(h.tanggal).toLocaleDateString('id-ID')}</span>
+                  </div>
+                </div>
+                <button class="history-item-delete" onclick="window.__deleteHistory('${h.id}')" title="Hapus">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            `).join('');
+            }
+
+            // Expose ke window untuk onclick inline
+            window.__deleteHistory = (id) => deleteHistoryItem(id);
+            window.__loadHistory = (id) => {
+                const entry = state.history.find(h => h.id === id);
+                if (entry) {
+                    state.currentResultId = entry.id;
+                    state.currentData = entry;
+                    exportBtn.disabled = false;
+                    copyBtn.disabled = false;
+                    renderSummary(entry);
+                    renderChunkErrors(entry.chunk_errors || []);
+                    renderTable(entry.results || []);
+                    resultSection.classList.add('visible');
+                    resultSection.style.display = 'block';
+                    resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    closeHistory();
+                    showToast(`Dimuat dari riwayat: ${entry.nama}`, 'info');
+                    updateDonutChart();
+                }
+            };
+
+            // Initial render history
+            renderHistory();
+
+            // ====== FILE UPLOAD DRAG & DROP ======
+            uploadZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadZone.classList.add('dragover');
+            });
+            uploadZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                uploadZone.classList.remove('dragover');
+            });
+            uploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadZone.classList.remove('dragover');
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    updateFileNameDisplay();
+                    setStatus(`File dipilih: ${e.dataTransfer.files[0].name}`, false);
+                }
+            });
+            fileInput.addEventListener('change', updateFileNameDisplay);
+
+            function updateFileNameDisplay() {
+                if (fileInput.files.length) {
+                    fileNameDisplay.textContent = `📄 ${fileInput.files[0].name} (${formatFileSize(fileInput.files[0].size)})`;
+                    fileNameDisplay.style.display = 'block';
+                } else {
+                    fileNameDisplay.textContent = '';
+                    fileNameDisplay.style.display = 'none';
+                }
+            }
+
+            function formatFileSize(bytes) {
+                if (bytes < 1024) return bytes + ' B';
+                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+                return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+            }
+
+            // ====== SET STATUS ======
+            function setStatus(text, isError) {
+                statusEl.textContent = text;
+                statusEl.className = isError === true ? 'error' : isError === false ? 'success' : '';
+                if (isError === false) {
+                    // Tambahkan icon sukses
+                    statusEl.innerHTML = `<i class="fas fa-check-circle" style="color:var(--done)"></i> ${text}`;
+                } else if (isError === true) {
+                    statusEl.innerHTML = `<i class="fas fa-exclamation-circle" style="color:var(--warn)"></i> ${text}`;
+                }
+            }
+
+            function setProgress(percent, text) {
+                progressContainer.style.display = 'block';
+                progressBar.style.width = percent + '%';
+                progressText.textContent = text || `${Math.round(percent)}%`;
+                if (percent >= 100) {
+                    setTimeout(() => {
+                        progressContainer.style.display = 'none';
+                        progressText.textContent = '';
+                    }, 1500);
+                }
+            }
+
+            // ====== RENDER SUMMARY ======
+            function renderSummary(data) {
+                const total = data.total_ketentuan || 0;
+                const valid = data.total_valid || 0;
+                const flagged = data.total_flagged || 0;
+                const chunks = data.total_chunks || 0;
+                const batches = data.total_batches || 0;
+                summaryRow.innerHTML = `
+              <div class="stat"><strong>${total}</strong><span>Ketentuan Relevan</span></div>
+              <div class="stat stat-valid"><strong>${valid}</strong><span>Valid</span></div>
+              <div class="stat stat-flagged"><strong>${flagged}</strong><span>Perlu Ditinjau</span></div>
+              <div class="stat"><strong>${chunks}</strong><span>Potongan Teks</span></div>
+              <div class="stat"><strong>${batches}</strong><span>Pemanggilan API</span></div>
+            `;
+                updateDonutChart();
+            }
+
+            function updateDonutChart() {
+                if (!state.currentData) return;
+                const valid = state.currentData.total_valid || 0;
+                const flagged = state.currentData.total_flagged || 0;
+                const total = valid + flagged;
+                if (total === 0) {
+                    chartContainer.style.display = 'none';
+                    return;
+                }
+                chartContainer.style.display = 'flex';
+                const validPercent = Math.round((valid / total) * 100);
+                const flaggedPercent = 100 - validPercent;
+                const bg = getComputedStyle(document.documentElement).getPropertyValue('--card-bg').trim() || '#ffffff';
+                donutChart.style.background =
+                    `conic-gradient(var(--done) 0% ${validPercent}%, var(--warn) ${validPercent}% 100%)`;
+                donutInner.textContent = validPercent + '%';
+                donutInner.style.color = getComputedStyle(document.documentElement).getPropertyValue('--text').trim();
+                chartLegend.innerHTML = `
+              <div class="chart-legend-item">
+                <div class="chart-legend-dot valid"></div>
+                <span>Valid: ${valid} (${validPercent}%)</span>
+              </div>
+              <div class="chart-legend-item">
+                <div class="chart-legend-dot flagged"></div>
+                <span>Perlu Ditinjau: ${flagged} (${flaggedPercent}%)</span>
+              </div>
+            `;
+            }
+
+            // ====== RENDER CHUNK ERRORS ======
+            function renderChunkErrors(errors) {
+                if (!errors || errors.length === 0) {
+                    chunkErrorsBox.style.display = 'none';
+                    return;
+                }
+                chunkErrorsBox.style.display = 'block';
+                const lines = errors.map(e => {
+                    const ref = [e.bab, e.pasal, e.ayat].filter(Boolean).join(' - ') || '(referensi tidak diketahui)';
+                    const countInfo = e.affected_count > 1 ? ` (${e.affected_count} potongan)` : '';
+                    return `<li>${ref}${countInfo}: ${e.error}</li>`;
+                }).join('');
+                chunkErrorsBox.innerHTML =
+                    `<strong><i class="fas fa-triangle-exclamation"></i> ${errors.length} batch gagal dianalisis AI</strong> (bagian lain tetap ditampilkan):<ul>${lines}</ul>`;
+            }
+
+            // ====== RENDER TABLE ======
+            function renderTable(results) {
+                const filtered = applyFilter(results || []);
+                if (filtered.length === 0) {
+                    resultBody.innerHTML = '';
+                    emptyState.style.display = 'block';
+                    return;
+                }
+                emptyState.style.display = 'none';
+                resultBody.innerHTML = filtered.map((item, i) => {
+                    const isFlagged = !item.is_valid;
+                    const badge = isFlagged ?
+                        '<span class="badge flagged">Ditinjau</span>' :
+                        '<span class="badge valid">Valid</span>';
+                    const notes = (isFlagged && item.validation_notes && item.validation_notes.length) ?
+                        `<div class="notes">${item.validation_notes.join('; ')}</div>` :
+                        '';
+                    return `
+                <tr class="${isFlagged ? 'flagged' : 'valid-row'}">
+                  <td>${i + 1}</td>
+                  <td>${escapeHtml(item.referensi_regulasi || '-')}</td>
+                  <td>${escapeHtml(item.bab_pasal_ayat || '-')}</td>
+                  <td>${escapeHtml(item.point_ketentuan || '')}</td>
+                  <td>${escapeHtml(item.pemeriksaan || '')}</td>
+                  <td>${badge}${notes}</td>
+                  <td>
+                    <div class="row-actions">
+                      <button class="row-action-btn copy-row" title="Salin baris" data-index="${i}">
+                        <i class="fas fa-copy"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>`;
+                }).join('');
+
+                // Attach event untuk copy row
+                resultBody.querySelectorAll('.copy-row').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const idx = parseInt(btn.dataset.index);
+                        const item = filtered[idx];
+                        if (item) {
+                            const text =
+                                `Referensi: ${item.referensi_regulasi || '-'}\nBAB/Pasal/Ayat: ${item.bab_pasal_ayat || '-'}\nPoint: ${item.point_ketentuan}\nPemeriksaan: ${item.pemeriksaan}\nStatus: ${item.is_valid ? 'Valid' : 'Perlu Ditinjau'}`;
+                            navigator.clipboard.writeText(text).then(() => {
+                                showToast('Baris disalin ke clipboard.', 'success');
+                            }).catch(() => showToast('Gagal menyalin.', 'error'));
+                        }
+                    });
+                });
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            function applyFilter(results) {
+                let filtered = [...results];
+                // Filter status
+                if (state.filter === 'valid') {
+                    filtered = filtered.filter(r => r.is_valid);
+                } else if (state.filter === 'flagged') {
+                    filtered = filtered.filter(r => !r.is_valid);
+                }
+                // Search
+                if (state.searchQuery) {
+                    const q = state.searchQuery.toLowerCase();
+                    filtered = filtered.filter(r =>
+                        (r.referensi_regulasi || '').toLowerCase().includes(q) ||
+                        (r.bab_pasal_ayat || '').toLowerCase().includes(q) ||
+                        (r.point_ketentuan || '').toLowerCase().includes(q) ||
+                        (r.pemeriksaan || '').toLowerCase().includes(q)
+                    );
+                }
+                return filtered;
+            }
+
+            // ====== FILTER & SEARCH ======
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    filterBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    state.filter = btn.dataset.filter;
+                    if (state.currentData) renderTable(state.currentData.results || []);
+                });
+            });
+            searchInput.addEventListener('input', (e) => {
+                state.searchQuery = e.target.value;
+                if (state.currentData) renderTable(state.currentData.results || []);
+            });
+
+            // ====== EXPORT & COPY ======
+            exportBtn.addEventListener('click', () => {
+                if (state.currentResultId) {
+                    window.location.href = `/api/export/${state.currentResultId}`;
+                    showToast('Mengekspor ke Excel...', 'info');
+                }
+            });
+
+            copyBtn.addEventListener('click', () => {
+                if (!state.currentData || !state.currentData.results) return;
+                const results = state.currentData.results;
+                let text = `HASIL ANALISIS REGULASI\n`;
+                text += `Nama: ${state.currentData.nama_regulasi || '-'}\n`;
+                text += `Total: ${results.length} ketentuan\n`;
+                text += `${'='.repeat(60)}\n\n`;
+                results.forEach((r, i) => {
+                    text += `[${i + 1}] ${r.referensi_regulasi || '-'} | ${r.bab_pasal_ayat || '-'}\n`;
+                    text += `    Point: ${r.point_ketentuan}\n`;
+                    text += `    Pemeriksaan: ${r.pemeriksaan}\n`;
+                    text += `    Status: ${r.is_valid ? '✅ Valid' : '⚠️ Perlu Ditinjau'}\n`;
+                    if (r.validation_notes && r.validation_notes.length) {
+                        text += `    Catatan: ${r.validation_notes.join('; ')}\n`;
+                    }
+                    text += `\n`;
+                });
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast('Seluruh hasil disalin ke clipboard.', 'success');
+                }).catch(() => showToast('Gagal menyalin.', 'error'));
+            });
+
+            clearResultBtn.addEventListener('click', () => {
+                resultSection.style.display = 'none';
+                resultSection.classList.remove('visible');
+                state.currentResultId = null;
+                state.currentData = null;
+                exportBtn.disabled = true;
+                copyBtn.disabled = true;
+                setStatus('Hasil ditutup. Silakan upload regulasi baru.', false);
+                showToast('Hasil analisis ditutup.', 'info');
+            });
+
+            resetBtn.addEventListener('click', () => {
+                fileInput.value = '';
+                fileNameDisplay.textContent = '';
+                fileNameDisplay.style.display = 'none';
+                document.getElementById('namaRegulasi').value = '';
+                state.currentResultId = null;
+                state.currentData = null;
+                resultSection.style.display = 'none';
+                resultSection.classList.remove('visible');
+                exportBtn.disabled = true;
+                copyBtn.disabled = true;
+                setStatus('Menunggu file...', false);
+                showToast('Form dibersihkan.', 'info');
+            });
+
+            // ====== FORM SUBMIT ======
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                if (!fileInput.files.length) {
+                    setStatus('Silakan pilih file terlebih dahulu.', true);
+                    showToast('Pilih file terlebih dahulu!', 'error');
+                    return;
+                }
+
+                const file = fileInput.files[0];
+                const maxSize = 10 * 1024 * 1024; // 10MB
+                if (file.size > maxSize) {
+                    setStatus('File terlalu besar. Maksimal 10MB.', true);
+                    showToast('File terlalu besar! Maksimal 10MB.', 'error');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('file', file);
+                const nama = document.getElementById('namaRegulasi').value.trim();
+                if (nama) formData.append('nama_regulasi', nama);
+                else formData.append('nama_regulasi', file.name.replace(/\.[^.]+$/, ''));
+
+                state.isAnalyzing = true;
+                submitBtn.disabled = true;
+                resultSection.style.display = 'none';
+                resultSection.classList.remove('visible');
+                statusEl.innerHTML = '<span class="spinner"></span> Menganalisis regulasi...';
+                setProgress(5, 'Mengunggah file...');
+
+                try {
+                    // Simulasi progress (karena fetch tidak memberikan progress event)
+                    let progressInterval = setInterval(() => {
+                        const currentWidth = parseFloat(progressBar.style.width || '5');
+                        if (currentWidth < 90) {
+                            const increment = Math.random() * 8 + 2;
+                            const newWidth = Math.min(currentWidth + increment, 90);
+                            progressBar.style.width = newWidth + '%';
+                            if (newWidth < 30) progressText.textContent = 'Mengunggah & memproses dokumen...';
+                            else if (newWidth < 60) progressText.textContent = 'Menganalisis chunk dengan AI...';
+                            else if (newWidth < 80) progressText.textContent = 'Menggabungkan hasil analisis...';
+                            else progressText.textContent = 'Menyelesaikan...';
+                        }
+                    }, 800);
+
+                    const res = await fetch('/api/analyze', { method: 'POST', body: formData });
+                    const data = await res.json();
+
+                    clearInterval(progressInterval);
+                    setProgress(100, 'Selesai!');
+
+                    if (!res.ok) {
+                        setStatus(`Gagal: ${data.detail || 'Terjadi kesalahan pada server.'}`, true);
+                        showToast('Analisis gagal: ' + (data.detail || 'Server error'), 'error');
+                        submitBtn.disabled = false;
+                        state.isAnalyzing = false;
+                        return;
+                    }
+
+                    setStatus(
+                        `Selesai. ${data.total_ketentuan} ketentuan relevan ditemukan dari ${data.total_chunks} potongan teks (${data.total_batches} pemanggilan API).`,
+                        false
+                    );
+                    state.currentResultId = data.result_id;
+                    state.currentData = data;
+                    exportBtn.disabled = false;
+                    copyBtn.disabled = false;
+                    renderSummary(data);
+                    renderChunkErrors(data.chunk_errors);
+                    renderTable(data.results);
+                    resultSection.classList.add('visible');
+                    resultSection.style.display = 'block';
+                    resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    saveToHistory(data);
+                    showToast('Analisis selesai! 🎉', 'success');
+
+                } catch (err) {
+                    clearInterval(progressInterval);
+                    setStatus(`Gagal terhubung ke server: ${err.message}`, true);
+                    showToast('Gagal terhubung ke server.', 'error');
+                } finally {
+                    submitBtn.disabled = false;
+                    state.isAnalyzing = false;
+                    setTimeout(() => {
+                        progressContainer.style.display = 'none';
+                        progressText.textContent = '';
+                        progressBar.style.width = '0%';
+                    }, 2000);
+                }
+            });
+
+            // ====== KEYBOARD SHORTCUTS ======
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeHistory();
+                }
+                if (e.ctrlKey && e.key === 'k') {
+                    e.preventDefault();
+                    searchInput.focus();
+                }
+            });
+
+            // ====== INITIAL STATE ======
+            setStatus('Menunggu file...', false);
+            updateFileNameDisplay();
+
+            console.log('🚀 Regulation to IT Audit Assistant - Enhanced UI loaded');
+            console.log('💡 Tips: Gunakan Ctrl+K untuk fokus ke pencarian, Esc untuk tutup panel');
+        })();
+    </script>
+</body>
+</html>

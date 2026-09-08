@@ -1,0 +1,68 @@
+PERATURAN CONTOH NOMOR 01/CONTOH/2026
+TENTANG
+TATA KELOLA TEKNOLOGI INFORMASI BAGI LEMBAGA JASA KEUANGAN
+
+(Dokumen ini adalah CONTOH FIKTIF yang dibuat khusus untuk keperluan
+pengujian aplikasi, bukan kutipan dari peraturan resmi manapun.)
+
+
+BAB I
+KETENTUAN UMUM
+
+Pasal 1
+
+Dalam Peraturan Contoh ini yang dimaksud dengan:
+1. Lembaga adalah pihak yang menyelenggarakan kegiatan jasa keuangan.
+2. Teknologi Informasi adalah perangkat keras, perangkat lunak, dan
+   infrastruktur pendukung yang digunakan Lembaga.
+
+
+BAB V
+KEAMANAN INFORMASI DAN MANAJEMEN AKSES
+
+Pasal 20
+
+Ayat (1)
+Lembaga wajib memiliki kebijakan keamanan informasi tertulis yang
+mencakup aspek sumber daya manusia, fisik, logis, operasional
+teknologi informasi, jaringan, dan penanganan insiden.
+
+Ayat (2)
+Kebijakan sebagaimana dimaksud pada ayat (1) wajib dikomunikasikan
+kepada seluruh pegawai dan dievaluasi secara berkala paling sedikit
+1 (satu) kali dalam setahun.
+
+Pasal 21
+
+Ayat (1)
+Lembaga wajib menerapkan pengendalian akses terhadap sistem informasi
+berdasarkan prinsip kebutuhan (need to know) dan hak akses minimum
+(least privilege).
+
+Ayat (2)
+Pengendalian akses sebagaimana dimaksud pada ayat (1) paling sedikit
+mencakup:
+a. otentikasi pengguna;
+b. otorisasi berdasarkan peran (role-based access control);
+c. pencatatan (logging) atas seluruh aktivitas akses; dan
+d. tinjauan berkala terhadap hak akses pengguna.
+
+
+Pasal 22
+
+(1) Lembaga wajib memiliki prosedur pengelolaan insiden keamanan
+informasi yang mencakup deteksi, penanganan, dan pelaporan insiden.
+
+(2) Insiden keamanan informasi sebagaimana dimaksud pada ayat (1)
+wajib dilaporkan kepada pengawas paling lambat 3 (tiga) hari kerja
+sejak insiden diketahui.
+
+
+BAB VI
+KETENTUAN ADMINISTRATIF UMUM
+
+Pasal 30
+
+Lembaga wajib menyampaikan laporan tahunan kepada pengawas terkait
+kegiatan operasional non-teknologi informasi paling lambat tanggal
+31 Maret setiap tahun.
