@@ -11,10 +11,11 @@ response (harus berupa list) sudah benar.
 """
 
 from app.prompts.regulation_audit_prompt import (
-    SYSTEM_PROMPT,
     build_batch_user_prompt,
+    build_system_prompt,
     build_user_prompt,
 )
+
 from app.services.ai_service import AIProvider
 
 
@@ -54,9 +55,11 @@ def analyze_chunk(
         bab=chunk.get("bab"),
         pasal=chunk.get("pasal"),
         ayat=chunk.get("ayat"),
+        lampiran=chunk.get("lampiran"),
     )
 
-    result = provider.generate_json(SYSTEM_PROMPT, user_prompt)
+    system_prompt = build_system_prompt()   # baca override terbaru
+    result = provider.generate_json(system_prompt, user_prompt)
 
     if not isinstance(result, list):
         raise AuditAnalysisError(
@@ -95,8 +98,8 @@ def analyze_chunks_batch(
         return []
 
     user_prompt = build_batch_user_prompt(chunks, referensi_regulasi=referensi_regulasi)
-    result = provider.generate_json(SYSTEM_PROMPT, user_prompt)
-
+    system_prompt = build_system_prompt()   # baca override terbaru
+    result = provider.generate_json(system_prompt, user_prompt)
     if not isinstance(result, list):
         raise AuditAnalysisError(
             f"Response AI seharusnya berupa JSON array, tapi didapat: {type(result).__name__}"

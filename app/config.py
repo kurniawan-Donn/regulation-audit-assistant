@@ -14,20 +14,22 @@ class Settings(BaseSettings):
     app_env: str = "development"
     debug: bool = True
 
-    # AI provider - akan dipakai mulai Phase 4
+    # AI provider
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-3.7-flash"
+    gemini_model: str = "gemini-2.5-flash"
     gemini_max_output_tokens: int = 8192
-    # Jarak minimum antar-request ke Gemini (detik), untuk menjaga RPM
-    # free tier tidak terlampaui. Default 4.5s -> aman untuk ~13 RPM.
     gemini_min_seconds_between_requests: float = 4.5
 
-    # Batching - Phase 11: gabungkan banyak chunk kecil jadi sedikit request
-    # untuk mengatasi limit RPD/RPM (bukan TPM, yang biasanya masih longgar).
+    # Batching
     max_chars_per_batch: int = 6000
 
-    # Upload settings - akan dipakai mulai Phase 2
-    max_upload_size_mb: int = 20
+    # Upload settings
+    max_upload_size_mb: int = 10
+
+    # --- Pricing untuk estimasi biaya (USD per 1 juta token) ---
+    gemini_input_price_per_1m_usd: float = 0.30
+    gemini_output_price_per_1m_usd: float = 2.50
+    usd_to_idr: float = 16000.0
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -36,5 +38,4 @@ class Settings(BaseSettings):
     )
 
 
-# Singleton settings instance, di-import oleh modul lain
 settings = Settings()

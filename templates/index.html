@@ -1,45 +1,86 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="light">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Regulation to IT Audit Assistant</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <link rel="stylesheet" href="/static/css/style.css" />
+    <link rel="stylesheet" href="/static/css/style.css?v=9" />
 </head>
 <body>
 
-    <!-- Overlay untuk history -->
-    <div class="history-overlay" id="historyOverlay"></div>
-
-    <header>
-        <div class="header-content">
-            <div class="header-left">
-                <div class="header-icon">
+    <!-- ============================================================
+         SIDEBAR
+         ============================================================ -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-brand">
+                <div class="sidebar-logo">
                     <i class="fas fa-file-shield"></i>
                 </div>
-                <div>
-                    <h1>Regulation to IT Audit Assistant</h1>
-                    <p>Ubah ketentuan regulasi menjadi prosedur pemeriksaan audit TI secara otomatis</p>
+                <div class="sidebar-brand-text">
+                    <strong>Audit Assistant</strong>
+                    <span>Regulation Tools</span>
                 </div>
             </div>
-            <div class="header-actions">
-                <button class="header-btn" id="themeToggle" title="Ganti tema">
-                    <i class="fas fa-moon"></i> <span id="themeLabel">Dark</span>
-                </button>
-                <button class="header-btn" id="historyToggle" title="Riwayat analisis">
-                    <i class="fas fa-clock-rotate-left"></i> Riwayat
-                </button>
-            </div>
         </div>
+
+        <nav class="sidebar-nav">
+            <button class="sidebar-item active" data-page="regulation-audit">
+                <i class="fas fa-clipboard-check"></i>
+                <span>Regulation to Audit</span>
+            </button>
+            <button class="sidebar-item" data-page="gap-analysis">
+                <i class="fas fa-magnifying-glass-chart"></i>
+                <span>Gap Analysis</span>
+            </button>
+            <button class="sidebar-item" data-page="search">
+                <i class="fas fa-magnifying-glass"></i>
+                <span>Cari Global</span>
+            </button>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="sidebar-settings-btn" id="settingsToggle" title="Pengaturan">
+                <i class="fas fa-gear"></i>
+                <span>Pengaturan</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Overlay untuk mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- ============================================================
+         MOBILE HEADER
+         ============================================================ -->
+    <header class="mobile-header">
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h1 id="mobileHeaderTitle">Regulation to Audit</h1>
+        <div style="width:40px;"></div>
     </header>
 
-    <main>
-        <!-- Card Upload -->
-        <div class="card" id="uploadCard">
+    <!-- ============================================================
+         HALAMAN: REGULATION TO AUDIT
+         ============================================================ -->
+    <main class="page" id="page-regulation-audit">
+        <div class="page-header">
+            <div>
+                <h1>Regulation to Audit</h1>
+                <p>Ubah ketentuan regulasi menjadi baris kertas kerja audit TI</p>
+            </div>
+        </div>
+
+        <!-- UPLOAD CARD -->
+        <section class="card" id="uploadCard">
             <div class="privacy-note">
                 <i class="fas fa-lock"></i>
-                Hallo-halo (～￣▽￣)～ gunakan dokumen regulasi publik ya. Jangan mengunggah dokumen rahasia atau data sensitif (nanti ku Intip Loh) []~(￣▽￣)~*
+                <div>
+                    <strong>Gunakan dokumen regulasi publik.</strong>
+                    Jangan mengunggah dokumen rahasia atau data sensitif.
+                </div>
             </div>
 
             <form id="uploadForm" enctype="multipart/form-data">
@@ -49,7 +90,7 @@
                         <i class="fas fa-cloud-arrow-up"></i>
                     </div>
                     <p><strong>Klik untuk pilih file</strong> atau seret &amp; letakkan di sini</p>
-                    <p style="font-size:0.75rem; margin-top:0.2rem;">Format: PDF, TXT &bull; Maks 10MB</p>
+                    <p class="hint">Format: PDF, TXT &bull; Maks 10 MB</p>
                     <div class="file-name-display" id="fileNameDisplay"></div>
                     <input type="file" id="fileInput" name="file" accept=".pdf,.txt" required />
                 </div>
@@ -57,11 +98,11 @@
                 <label for="namaRegulasi">Nama Regulasi (opsional)</label>
                 <input type="text" id="namaRegulasi" name="nama_regulasi" placeholder="mis. POJK 11/POJK.03/2022" />
 
-                <div style="display:flex; gap:0.8rem; flex-wrap:wrap;">
+                <div class="form-actions">
                     <button type="submit" class="btn btn-primary" id="submitBtn">
-                        <i class="fas fa-robot"></i> Analisis Regulasi
+                        <i class="fas fa-magnifying-glass"></i> Baca Struktur Regulasi
                     </button>
-                    <button type="button" class="btn btn-danger btn-sm" id="resetBtn" style="margin-left:auto;">
+                    <button type="button" class="btn btn-ghost" id="resetBtn">
                         <i class="fas fa-trash"></i> Bersihkan
                     </button>
                 </div>
@@ -72,30 +113,47 @@
             </div>
             <div class="progress-text" id="progressText"></div>
 
-            <div id="status">Menunggu file...</div>
-        </div>
+            <div id="status" class="status-text">Menunggu file...</div>
+        </section>
 
-        <!-- Card Hasil -->
-        <div id="resultSection" class="card">
+        <!-- RESULT CARD -->
+        <section class="card" id="resultSection" style="display:none;">
             <div class="result-header">
-                <h2><i class="fas fa-chart-simple"></i> Hasil Analisis</h2>
-                <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+                <div class="result-header-left">
+                    <h2><i class="fas fa-chart-simple"></i> Hasil Analisis</h2>
+                    <div class="progress-badge" id="progressBadge" style="display:none;"></div>
+                </div>
+                <div class="result-actions">
+                    <button class="btn btn-secondary btn-sm" id="changeFilterBtn" title="Ubah bagian yang dianalisis">
+                        <i class="fas fa-sliders"></i> Ubah Bagian
+                    </button>
                     <button class="btn btn-success btn-sm" id="exportBtn" disabled>
-                        <i class="fas fa-file-excel"></i> Export Excel
+                        <i class="fas fa-file-excel"></i> Excel
+                    </button>
+                    <button class="btn btn-danger btn-sm" id="exportPdfBtn" disabled>
+                        <i class="fas fa-file-pdf"></i> PDF
                     </button>
                     <button class="btn btn-secondary btn-sm" id="copyBtn" disabled>
                         <i class="fas fa-copy"></i> Salin
                     </button>
-                    <button class="btn btn-danger btn-sm" id="clearResultBtn">
-                        <i class="fas fa-xmark"></i> Tutup Hasil
+                    <button class="btn btn-ghost btn-sm" id="clearResultBtn">
+                        <i class="fas fa-xmark"></i> Tutup
                     </button>
                 </div>
             </div>
 
+            <div id="filterBadge" class="filter-badge" style="display:none;"></div>
+            <div id="previewExpiredBanner" class="preview-expired-banner" style="display:none;">
+                <i class="fas fa-triangle-exclamation"></i>
+                <div>
+                    <strong>Preview sudah kedaluwarsa.</strong>
+                    Silakan upload ulang file untuk mengubah bagian yang dianalisis.
+                </div>
+            </div>
             <div id="chunkErrorsBox" class="chunk-errors" style="display:none;"></div>
 
-            <!-- Summary & Chart -->
             <div class="summary-row" id="summaryRow"></div>
+
             <div class="chart-container" id="chartContainer" style="display:none;">
                 <div class="donut-chart" id="donutChart">
                     <div class="donut-inner" id="donutInner">0%</div>
@@ -103,57 +161,880 @@
                 <div class="chart-legend" id="chartLegend"></div>
             </div>
 
-            <!-- Toolbar -->
+            <div id="aspectsBox" class="aspects-box" style="display:none;"></div>
+
             <div class="toolbar">
                 <div class="search-box">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="searchInput" placeholder="Cari ketentuan, pemeriksaan, referensi..." />
+                    <input type="text" id="searchInput" placeholder="Cari ketentuan, pemeriksaan, referensi... (Ctrl+K)" />
                 </div>
-                <div class="filter-btns">
-                    <button class="filter-btn active" data-filter="all">Semua</button>
-                    <button class="filter-btn" data-filter="valid">Valid</button>
-                    <button class="filter-btn" data-filter="flagged">Ditinjau</button>
+                <div class="toolbar-right">
+                    <select class="status-filter" id="statusFilter" title="Filter status kepatuhan">
+                        <option value="">Semua Status</option>
+                        <option value="Belum Diaudit">Belum Diaudit</option>
+                        <option value="Patuh">Patuh</option>
+                        <option value="Sebagian Patuh">Sebagian Patuh</option>
+                        <option value="Tidak Patuh">Tidak Patuh</option>
+                        <option value="N/A">N/A</option>
+                    </select>
+                    <div class="filter-btns">
+                        <button class="filter-btn active" data-filter="all">Semua</button>
+                        <button class="filter-btn" data-filter="valid">Valid</button>
+                        <button class="filter-btn" data-filter="flagged">Ditinjau</button>
+                    </div>
                 </div>
+            </div>
+
+            <div class="bulk-toolbar" id="bulkToolbar" style="display:none;">
+                <span class="bulk-count" id="bulkCount">0 dipilih</span>
+                <div class="bulk-actions">
+                    <select class="bulk-status-select" id="bulkStatusSelect">
+                        <option value="">Ubah status jadi...</option>
+                        <option value="Patuh">Patuh</option>
+                        <option value="Sebagian Patuh">Sebagian Patuh</option>
+                        <option value="Tidak Patuh">Tidak Patuh</option>
+                        <option value="N/A">N/A</option>
+                        <option value="Belum Diaudit">Belum Diaudit</option>
+                    </select>
+                    <button class="btn btn-danger btn-sm" id="bulkDeleteBtn">
+                        <i class="fas fa-trash"></i> Hapus Terpilih
+                    </button>
+                    <button class="btn btn-ghost btn-sm" id="bulkClearBtn">
+                        <i class="fas fa-xmark"></i> Batal Pilih
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-actions-row">
+                <button class="btn btn-secondary btn-sm" id="addRowBtn">
+                    <i class="fas fa-plus"></i> Tambah Baris Manual
+                </button>
             </div>
 
             <div class="table-container">
                 <table>
                     <thead>
                         <tr>
+                            <th style="width:3%">
+                                <input type="checkbox" class="select-all-checkbox" id="selectAllCheckbox" title="Pilih semua" />
+                            </th>
                             <th style="width:3%">No</th>
-                            <th style="width:13%">Referensi</th>
-                            <th style="width:12%">BAB/Pasal/Ayat</th>
-                            <th style="width:26%">Point/Ketentuan</th>
-                            <th style="width:31%">Pemeriksaan</th>
-                            <th style="width:9%">Status</th>
-                            <th style="width:6%">Aksi</th>
+                            <th style="width:8%">Referensi Regulasi</th>
+                            <th style="width:9%">Aspek / Domain</th>
+                            <th style="width:8%">BAB / Pasal / Ayat</th>
+                            <th style="width:14%">Ketentuan / Poin Regulasi</th>
+                            <th style="width:15%">Prosedur Pemeriksaan</th>
+                            <th style="width:8%">Metode Audit</th>
+                            <th style="width:11%">Kebutuhan Bukti</th>
+                            <th style="width:9%">Status Kepatuhan</th>
+                            <th style="width:8%">Catatan / Temuan</th>
+                            <th style="width:4%">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="resultBody"></tbody>
                 </table>
             </div>
-            <div class="empty-state" id="emptyState">
+            <div class="empty-state" id="emptyState" style="display:none;">
                 <i class="fas fa-inbox"></i>
                 <p>Tidak ada data yang cocok dengan pencarian/filter.</p>
             </div>
-        </div>
+        </section>
     </main>
 
-    <!-- History Panel -->
-    <div class="history-panel" id="historyPanel">
-        <div class="history-header">
-            <h3><i class="fas fa-clock-rotate-left"></i> Riwayat Analisis</h3>
-            <button class="history-close" id="historyClose"><i class="fas fa-times"></i></button>
+    <!-- ============================================================
+         HALAMAN: GAP ANALYSIS
+         ============================================================ -->
+    <main class="page" id="page-gap-analysis" style="display:none;">
+        <div class="page-header">
+            <div>
+                <h1>Gap Analysis</h1>
+                <p>Ekstrak persyaratan dari regulasi untuk analisis kesenjangan</p>
+            </div>
         </div>
-        <div class="history-list" id="historyList"></div>
-        <button class="history-clear-all" id="historyClearAll">
-            <i class="fas fa-trash-can"></i> Hapus Semua Riwayat
-        </button>
+
+        <section class="card" id="gapUploadCard">
+            <div class="privacy-note">
+                <i class="fas fa-lock"></i>
+                <div>
+                    <strong>Gunakan dokumen regulasi publik.</strong>
+                    Jangan mengunggah dokumen rahasia atau data sensitif.
+                </div>
+            </div>
+
+            <form id="gapUploadForm" enctype="multipart/form-data">
+                <label for="gapFileInput">Upload Regulasi (PDF atau TXT)</label>
+                <div class="upload-zone" id="gapUploadZone">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-arrow-up"></i>
+                    </div>
+                    <p><strong>Klik untuk pilih file</strong> atau seret &amp; letakkan di sini</p>
+                    <p class="hint">Format: PDF, TXT &bull; Maks 10 MB</p>
+                    <div class="file-name-display" id="gapFileNameDisplay"></div>
+                    <input type="file" id="gapFileInput" name="file" accept=".pdf,.txt" required />
+                </div>
+
+                <div class="form-row-2col">
+                    <div>
+                        <label for="gapNamaRegulasi">Nama Regulasi (opsional)</label>
+                        <input type="text" id="gapNamaRegulasi" name="nama_regulasi"
+                               placeholder="mis. PADK 43/2025" />
+                    </div>
+                    <div>
+                        <label for="gapFilterInput">
+                            Batasi ke Bagian Tertentu <span class="optional-tag">(opsional)</span>
+                        </label>
+                        <input type="text" id="gapFilterInput" name="filter_text"
+                               placeholder="mis. pengakhiran, keamanan siber" />
+                    </div>
+                </div>
+                <p class="field-hint">
+                    <i class="fas fa-info-circle"></i>
+                    Kalau diisi, hanya bagian yang mengandung kata kunci tersebut yang dianalisis (menghemat biaya).
+                </p>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" id="gapSubmitBtn">
+                        <i class="fas fa-wand-magic-sparkles"></i> Ekstrak Persyaratan
+                    </button>
+                    <button type="button" class="btn btn-ghost" id="gapResetBtn">
+                        <i class="fas fa-trash"></i> Bersihkan
+                    </button>
+                </div>
+            </form>
+
+            <div class="progress-container" id="gapProgressContainer">
+                <div class="progress-bar" id="gapProgressBar"></div>
+            </div>
+            <div class="progress-text" id="gapProgressText"></div>
+            <div id="gapStatus" class="status-text">Menunggu file...</div>
+        </section>
+
+        <section class="card" id="gapResultSection" style="display:none;">
+            <div class="result-header">
+                <div class="result-header-left">
+                    <h2><i class="fas fa-list-check"></i> Daftar Persyaratan</h2>
+                    <div id="gapFilterBadge" class="filter-badge" style="display:none;"></div>
+                </div>
+                <div class="result-actions">
+                    <button class="btn btn-success btn-sm" id="gapExportBtn" disabled>
+                        <i class="fas fa-file-excel"></i> Export Excel
+                    </button>
+                    <button class="btn btn-secondary btn-sm" id="gapCopyBtn" disabled>
+                        <i class="fas fa-copy"></i> Salin
+                    </button>
+                    <button class="btn btn-ghost btn-sm" id="gapClearResultBtn">
+                        <i class="fas fa-xmark"></i> Tutup
+                    </button>
+                </div>
+            </div>
+
+            <div id="gapChunkErrorsBox" class="chunk-errors" style="display:none;"></div>
+
+            <div class="summary-row" id="gapSummaryRow"></div>
+
+            <div class="toolbar">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="gapSearchInput" placeholder="Cari persyaratan, referensi, catatan..." />
+                </div>
+                <div class="toolbar-right">
+                    <select class="status-filter" id="gapStatusFilter" title="Filter status gap">
+                        <option value="">Semua Status</option>
+                        <option value="Sesuai">Sesuai</option>
+                        <option value="Sebagian Sesuai">Sebagian Sesuai</option>
+                        <option value="Tidak Sesuai">Tidak Sesuai</option>
+                        <option value="Belum Dinilai">Belum Dinilai</option>
+                        <option value="N/A">N/A</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="bulk-toolbar" id="gapBulkToolbar" style="display:none;">
+                <span class="bulk-count" id="gapBulkCount">0 dipilih</span>
+                <div class="bulk-actions">
+                    <select class="bulk-status-select" id="gapBulkStatusSelect">
+                        <option value="">Ubah status gap jadi...</option>
+                        <option value="Sesuai">Sesuai</option>
+                        <option value="Sebagian Sesuai">Sebagian Sesuai</option>
+                        <option value="Tidak Sesuai">Tidak Sesuai</option>
+                        <option value="Belum Dinilai">Belum Dinilai</option>
+                        <option value="N/A">N/A</option>
+                    </select>
+                    <button class="btn btn-danger btn-sm" id="gapBulkDeleteBtn">
+                        <i class="fas fa-trash"></i> Hapus Terpilih
+                    </button>
+                    <button class="btn btn-ghost btn-sm" id="gapBulkClearBtn">
+                        <i class="fas fa-xmark"></i> Batal Pilih
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-actions-row">
+                <button class="btn btn-secondary btn-sm" id="gapAddRowBtn">
+                    <i class="fas fa-plus"></i> Tambah Persyaratan Manual
+                </button>
+            </div>
+
+            <div class="table-container gap-table-container">
+                <table class="gap-table">
+                    <thead>
+                        <tr>
+                            <th style="width:3%">
+                                <input type="checkbox" class="select-all-checkbox" id="gapSelectAllCheckbox" />
+                            </th>
+                            <th style="width:3%">No</th>
+                            <th style="width:28%">Persyaratan</th>
+                            <th style="width:22%">Referensi</th>
+                            <th style="width:32%">Catatan</th>
+                            <th style="width:8%">Status Gap</th>
+                            <th style="width:4%">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="gapResultBody"></tbody>
+                </table>
+            </div>
+            <div class="empty-state" id="gapEmptyState" style="display:none;">
+                <i class="fas fa-inbox"></i>
+                <p>Tidak ada data yang cocok dengan pencarian/filter.</p>
+            </div>
+        </section>
+    </main>
+
+
+        <!-- ============================================================
+         HALAMAN: CARI GLOBAL
+         ============================================================ -->
+    <main class="page" id="page-search" style="display:none;">
+        <div class="page-header">
+            <div>
+                <h1>Cari Global</h1>
+                <p>Cari ketentuan atau persyaratan di seluruh analisis yang pernah dibuat</p>
+            </div>
+        </div>
+
+        <!-- Search card -->
+        <section class="card">
+            <div class="search-global-input-wrap">
+                <div class="search-global-input">
+                    <i class="fas fa-magnifying-glass"></i>
+                    <input type="text" id="globalSearchInput"
+                           placeholder="Cari ketentuan, aspek, referensi, atau persyaratan... (mis. keamanan siber)"
+                           autocomplete="off" />
+                    <button class="search-global-clear" id="globalSearchClear" title="Bersihkan" style="display:none;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="search-global-filters">
+                    <select id="globalSearchTool" class="search-global-filter">
+                        <option value="all">Semua Tool</option>
+                        <option value="regulation_audit">Regulation to Audit</option>
+                        <option value="gap_analysis">Gap Analysis</option>
+                    </select>
+                    <select id="globalSearchDays" class="search-global-filter">
+                        <option value="">Semua Waktu</option>
+                        <option value="7">7 hari terakhir</option>
+                        <option value="30">30 hari terakhir</option>
+                        <option value="90">90 hari terakhir</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <!-- Hasil -->
+        <section class="card" id="searchResultSection" style="display:none;">
+            <div class="search-result-header">
+                <h2><i class="fas fa-list"></i> Hasil Pencarian</h2>
+                <span class="search-result-count" id="searchResultCount"></span>
+            </div>
+
+            <div id="searchGroupedResults"></div>
+
+            <div class="empty-state" id="searchEmptyState" style="display:none;">
+                <i class="fas fa-magnifying-glass"></i>
+                <p>Tidak ada hasil yang cocok.</p>
+            </div>
+        </section>
+
+        <!-- Hint (belum search) -->
+        <section class="card" id="searchHintSection">
+            <div class="search-hint">
+                <i class="fas fa-lightbulb"></i>
+                <div>
+                    <strong>Tips Pencarian</strong>
+                    <ul>
+                        <li>Masukkan minimal <strong>2 karakter</strong> untuk mulai mencari.</li>
+                        <li>Pencarian tidak case-sensitive — "keamanan" dan "Keamanan" sama.</li>
+                        <li>Gunakan filter tool atau tanggal untuk mempersempit hasil.</li>
+                        <li>Klik hasil untuk membuka dokumen aslinya.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ============================================================
+         TREE MODAL
+         ============================================================ -->
+    <div class="tree-modal-overlay" id="treeModalOverlay" style="display:none;">
+        <div class="tree-modal" role="dialog" aria-modal="true">
+            <div class="tree-modal-header">
+                <div>
+                    <h2 id="treeModalTitle">
+                        <i class="fas fa-sitemap"></i> Pilih Bagian yang Akan Dianalisis
+                    </h2>
+                    <p class="tree-modal-sub" id="treeModalSub"></p>
+                </div>
+                <button class="tree-modal-close" id="treeModalClose" aria-label="Tutup">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="tree-modal-toolbar">
+                <button class="btn btn-secondary btn-sm" id="treeSelectAll">
+                    <i class="fas fa-check-double"></i> Pilih Semua
+                </button>
+                <button class="btn btn-ghost btn-sm" id="treeClearAll">
+                    <i class="fas fa-eraser"></i> Kosongkan
+                </button>
+                <span class="tree-selected-count" id="treeSelectedCount">0 bagian terpilih</span>
+            </div>
+
+            <div class="tree-modal-body">
+                <div class="tree-container" id="treeContainer"></div>
+            </div>
+
+            <div class="tree-modal-footer">
+                <div class="tree-estimate" id="treeEstimate">
+                    <i class="fas fa-info-circle"></i>
+                    <span class="tree-estimate-text">Pilih bagian untuk melihat estimasi</span>
+                </div>
+                <div class="tree-footer-actions">
+                    <button class="btn btn-ghost" id="treeCancelBtn">
+                        <i class="fas fa-xmark"></i> Batal
+                    </button>
+                    <button class="btn btn-primary" id="treeAnalyzeBtn" disabled>
+                        <i class="fas fa-robot"></i> Analisis Bagian Terpilih
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Toast Container -->
+    <!-- ============================================================
+         SETTINGS PANEL
+         ============================================================ -->
+    <div class="settings-overlay" id="settingsOverlay"></div>
+    <aside class="settings-panel" id="settingsPanel" aria-label="Pengaturan">
+
+        <div class="settings-header">
+            <button class="settings-back" id="settingsBack" style="display:none;" aria-label="Kembali">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <h3 id="settingsTitle">
+                <i class="fas fa-gear"></i>
+                <span id="settingsTitleText">Pengaturan</span>
+            </h3>
+            <button class="settings-close" id="settingsClose" aria-label="Tutup">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- ============ VIEW: Menu Utama ============ -->
+        <div class="settings-view" data-view="menu">
+            <ul class="settings-menu">
+                <li data-target="model-ai">
+                    <i class="fas fa-robot"></i>
+                    <div><strong>Model &amp; AI</strong><span>API key, model, parameter AI</span></div>
+                    <i class="fas fa-chevron-right chevron"></i>
+                </li>
+                <li data-target="prompt-editor">
+                    <i class="fas fa-wand-magic-sparkles"></i>
+                    <div><strong>Prompt AI</strong><span>Atur perilaku AI</span></div>
+                    <i class="fas fa-chevron-right chevron"></i>
+                </li>
+                <li data-target="riwayat">
+                    <i class="fas fa-clock-rotate-left"></i>
+                    <div><strong>Riwayat Analisis</strong><span>Lihat analisis sebelumnya</span></div>
+                    <i class="fas fa-chevron-right chevron"></i>
+                </li>
+                <li data-target="tampilan">
+                    <i class="fas fa-palette"></i>
+                    <div><strong>Tampilan</strong><span>Tema aplikasi</span></div>
+                    <i class="fas fa-chevron-right chevron"></i>
+                </li>
+                <li data-target="panduan">
+                    <i class="fas fa-book"></i>
+                    <div><strong>Panduan Penggunaan</strong><span>Cara pakai &amp; tips</span></div>
+                    <i class="fas fa-chevron-right chevron"></i>
+                </li>
+                <li data-target="diagnostik">
+                    <i class="fas fa-stethoscope"></i>
+                    <div><strong>Diagnostik</strong><span>Status sistem &amp; koneksi</span></div>
+                    <i class="fas fa-chevron-right chevron"></i>
+                </li>
+                <li data-target="tentang">
+                    <i class="fas fa-info-circle"></i>
+                    <div><strong>Tentang</strong><span>Versi &amp; kontak</span></div>
+                    <i class="fas fa-chevron-right chevron"></i>
+                </li>
+            </ul>
+        </div>
+
+        <!-- ============ VIEW: Model & AI ============ -->
+        <div class="settings-view" data-view="model-ai" style="display:none;">
+            <div class="settings-section">
+                <label class="settings-label"><i class="fas fa-key"></i> API Key Gemini</label>
+                <div class="settings-key-row">
+                    <input type="password" id="apiKeyInput" class="settings-input"
+                           placeholder="AQ.xxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
+                    <button class="btn btn-ghost btn-sm" id="toggleApiKey" type="button">
+                        <i class="fas fa-eye" id="toggleApiKeyIcon"></i>
+                    </button>
+                </div>
+                <p class="settings-hint" id="apiKeyHint">
+                    <i class="fas fa-shield-halved"></i> Belum ada API key tersimpan.
+                </p>
+            </div>
+            <div class="settings-section">
+                <label class="settings-label"><i class="fas fa-microchip"></i> Model Gemini</label>
+                <select id="modelSelect" class="settings-input"></select>
+                <input type="text" id="modelCustom" class="settings-input"
+                       style="margin-top:0.4rem; display:none;" placeholder="Ketik nama model manual..." />
+                <p class="settings-hint">Pilih dari daftar, atau pilih "Kustom" untuk ketik manual.</p>
+            </div>
+            <div class="settings-section">
+                <label class="settings-label"><i class="fas fa-sliders"></i> Parameter Lanjutan</label>
+                <div class="settings-field-row">
+                    <label for="maxTokensInput">Max Output Tokens</label>
+                    <input type="number" id="maxTokensInput" class="settings-input"
+                           min="256" max="32768" step="256" value="8192" />
+                </div>
+                <div class="settings-field-row">
+                    <label for="rateLimitInput">Jeda Minimum antar Request (detik)</label>
+                    <input type="number" id="rateLimitInput" class="settings-input"
+                           min="0" max="60" step="0.5" value="4.5" />
+                </div>
+                <div class="settings-field-row">
+                    <label for="batchSizeInput">Max Karakter per Batch</label>
+                    <input type="number" id="batchSizeInput" class="settings-input"
+                           min="1000" max="50000" step="500" value="6000" />
+                </div>
+            </div>
+            <div class="settings-section">
+                <div class="settings-actions">
+                    <button class="btn btn-secondary" id="testConnectionBtn">
+                        <i class="fas fa-plug"></i> Test Koneksi
+                    </button>
+                    <button class="btn btn-primary" id="saveSettingsBtn" disabled>
+                        <i class="fas fa-floppy-disk"></i> Simpan
+                    </button>
+                </div>
+                <div class="connection-status" id="connectionStatus" style="display:none;"></div>
+            </div>
+        </div>
+
+        <!-- ============ VIEW: PROMPT EDITOR ============ -->
+        <div class="settings-view" data-view="prompt-editor" style="display:none;">
+
+            <div class="prompt-warning-banner" id="promptWarningBanner">
+                <i class="fas fa-triangle-exclamation"></i>
+                <div>
+                    <strong>Perhatian</strong>
+                    <p>Mengubah prompt dapat memengaruhi kualitas hasil analisis. Uji dengan dokumen kecil terlebih dahulu.</p>
+                </div>
+            </div>
+
+            <div class="prompt-tool-tabs">
+                <button class="prompt-tool-tab active" data-prompt-tool="regulation_audit">
+                    <i class="fas fa-clipboard-check"></i>
+                    Regulation to Audit
+                </button>
+                <button class="prompt-tool-tab" data-prompt-tool="gap_analysis">
+                    <i class="fas fa-magnifying-glass-chart"></i>
+                    Gap Analysis
+                </button>
+            </div>
+
+            <div class="prompt-loading" id="promptLoading">
+                <i class="fas fa-spinner fa-spin"></i> Memuat prompt...
+            </div>
+
+            <div class="prompt-editor-content" id="promptEditorContent" style="display:none;">
+                
+                <!-- Preset Selector -->
+                <div class="prompt-preset-bar">
+                    <div class="prompt-preset-label">
+                        <i class="fas fa-wand-magic"></i>
+                        <div>
+                            <strong>Preset Cepat</strong>
+                            <span>Pilih template siap pakai, atau abaikan untuk edit manual</span>
+                        </div>
+                    </div>
+                    <div class="prompt-preset-controls">
+                        <select class="prompt-preset-select" id="presetSelect">
+                            <option value="">— Pilih Preset —</option>
+                        </select>
+                        <button class="btn btn-secondary btn-sm" id="applyPresetBtn" disabled>
+                            <i class="fas fa-check"></i> Terapkan
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Blok 1: Core Prompt -->
+                <div class="prompt-block prompt-block-editable">
+                    <div class="prompt-block-header">
+                        <div class="prompt-block-title">
+                            <i class="fas fa-pen-to-square"></i>
+                            <div>
+                                <strong>Prompt Inti</strong>
+                                <span>Role, tugas, contoh — dapat diubah</span>
+                            </div>
+                        </div>
+                        <div class="prompt-block-actions">
+                            <span class="prompt-badge prompt-badge-custom" id="coreCustomBadge" style="display:none;">
+                                Diubah
+                            </span>
+                            <button class="prompt-reset-btn" id="resetCoreBtn" title="Reset ke default">
+                                <i class="fas fa-rotate-left"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="prompt-block-body">
+                        <textarea id="corePromptTextarea" class="prompt-textarea"
+                                  spellcheck="false" rows="14"></textarea>
+                    </div>
+                </div>
+
+                <!-- Blok 2: Locked -->
+                <div class="prompt-block prompt-block-locked">
+                    <button class="prompt-block-toggle" id="lockedToggleBtn" type="button">
+                        <div class="prompt-block-title">
+                            <i class="fas fa-lock"></i>
+                            <div>
+                                <strong>Aturan Wajib</strong>
+                                <span>Vocabulary, aturan ketat, format output — tidak dapat diubah</span>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-down prompt-toggle-arrow" id="lockedToggleArrow"></i>
+                    </button>
+                    <div class="prompt-block-body prompt-locked-body" id="lockedBody" style="display:none;">
+                        <pre id="lockedPromptPre" class="prompt-locked-pre"></pre>
+                    </div>
+                </div>
+
+                <!-- Blok 3: User Instructions -->
+                <div class="prompt-block prompt-block-editable">
+                    <div class="prompt-block-header">
+                        <div class="prompt-block-title">
+                            <i class="fas fa-sparkles"></i>
+                            <div>
+                                <strong>Instruksi Tambahan</strong>
+                                <span>Opsional — di-append setelah prompt inti</span>
+                            </div>
+                        </div>
+                        <button class="prompt-reset-btn" id="resetUserBtn" title="Kosongkan">
+                            <i class="fas fa-rotate-left"></i>
+                        </button>
+                    </div>
+                    <div class="prompt-block-body">
+                        <textarea id="userInstructionsTextarea" class="prompt-textarea prompt-textarea-short"
+                                  spellcheck="false" rows="5"
+                                  placeholder="Contoh: Fokus pada aspek Keamanan Siber saja. Gunakan bahasa ringkas, maksimal 2 kalimat per field."></textarea>
+                    </div>
+                </div>
+
+                <div class="prompt-actions-row">
+                    <button class="btn btn-secondary" id="previewPromptBtn">
+                        <i class="fas fa-eye"></i> Preview Prompt Final
+                    </button>
+                    <button class="btn btn-ghost" id="resetAllPromptBtn">
+                        <i class="fas fa-rotate-left"></i> Reset Semua
+                    </button>
+                    <button class="btn btn-primary" id="savePromptBtn" disabled>
+                        <i class="fas fa-floppy-disk"></i> Simpan
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ============ VIEW: Riwayat ============ -->
+        <div class="settings-view" data-view="riwayat" style="display:none;">
+            <div class="history-list" id="historyList"></div>
+            <button class="history-clear-all" id="historyClearAll">
+                <i class="fas fa-trash-can"></i> Hapus Semua Riwayat
+            </button>
+        </div>
+
+        <!-- ============ VIEW: Tampilan ============ -->
+        <div class="settings-view" data-view="tampilan" style="display:none;">
+            <div class="settings-section">
+                <label class="settings-label"><i class="fas fa-circle-half-stroke"></i> Tema</label>
+                <div class="theme-options">
+                    <label class="theme-option">
+                        <input type="radio" name="theme" value="light" />
+                        <div class="theme-card theme-card-light">
+                            <i class="fas fa-sun"></i><span>Light</span>
+                        </div>
+                    </label>
+                    <label class="theme-option">
+                        <input type="radio" name="theme" value="dark" />
+                        <div class="theme-card theme-card-dark">
+                            <i class="fas fa-moon"></i><span>Dark</span>
+                        </div>
+                    </label>
+                    <label class="theme-option">
+                        <input type="radio" name="theme" value="auto" />
+                        <div class="theme-card theme-card-auto">
+                            <i class="fas fa-desktop"></i><span>Auto</span>
+                        </div>
+                    </label>
+                </div>
+                <p class="settings-hint">
+                    <i class="fas fa-info-circle"></i>
+                    Mode Auto mengikuti pengaturan sistem operasi Anda.
+                </p>
+            </div>
+        </div>
+
+        <!-- ============ VIEW: Panduan ============ -->
+        <div class="settings-view" data-view="panduan" style="display:none;">
+            <div class="guide-content">
+                <button class="btn btn-primary guide-tour-btn" id="startTourBtn">
+                    <i class="fas fa-play"></i> Mulai Tur Interaktif
+                </button>
+                <div class="guide-step">
+                    <div class="guide-step-num">1</div>
+                    <div>
+                        <strong>Upload Regulasi</strong>
+                        <p>Seret file PDF/TXT regulasi ke area upload, atau klik untuk pilih file.</p>
+                    </div>
+                </div>
+                <div class="guide-step">
+                    <div class="guide-step-num">2</div>
+                    <div>
+                        <strong>Pilih Tool</strong>
+                        <p>Regulation to Audit (prosedur audit lengkap) atau Gap Analysis (daftar persyaratan).</p>
+                    </div>
+                </div>
+                <div class="guide-step">
+                    <div class="guide-step-num">3</div>
+                    <div>
+                        <strong>Analisis</strong>
+                        <p>Klik tombol analisis. Sistem akan memproses dokumen dengan AI.</p>
+                    </div>
+                </div>
+                <div class="guide-step">
+                    <div class="guide-step-num">4</div>
+                    <div>
+                        <strong>Review &amp; Export</strong>
+                        <p>Edit hasil langsung di tabel, lalu export ke Excel.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ VIEW: Diagnostik ============ -->
+        <div class="settings-view" data-view="diagnostik" style="display:none;">
+            <div class="diagnostics-grid" id="diagnosticsGrid">
+                <div class="diag-loading">
+                    <i class="fas fa-spinner fa-spin"></i> Memuat diagnostik...
+                </div>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="refreshDiagnosticsBtn" style="margin-top:1rem; width:100%;">
+                <i class="fas fa-rotate"></i> Refresh
+            </button>
+        </div>
+
+        <!-- ============ VIEW: Tentang ============ -->
+        <div class="settings-view" data-view="tentang" style="display:none;">
+            <div class="about-content">
+                <div class="about-logo">
+                    <i class="fas fa-file-shield"></i>
+                </div>
+                <h2>Regulation to IT Audit Assistant</h2>
+                <p class="about-version">Versi <span id="aboutVersion">1.0.0</span></p>
+                <p class="about-desc">
+                    Aplikasi untuk membantu auditor TI mengubah ketentuan regulasi
+                    menjadi baris kertas kerja audit yang siap pakai.
+                </p>
+                <div class="about-info">
+                    <div class="about-row"><span>Versi</span><strong id="aboutAppVersion">1.0.0</strong></div>
+                    <div class="about-row"><span>Environment</span><strong id="aboutEnv">-</strong></div>
+                    <div class="about-row"><span>Model Aktif</span><strong id="aboutModel">-</strong></div>
+                </div>
+            </div>
+        </div>
+
+    </aside>
+
+    <!-- ============================================================
+         MODAL: TAMBAH BARIS MANUAL (Tool 1)
+         ============================================================ -->
+    <div class="add-row-modal-overlay" id="addRowModalOverlay" style="display:none;">
+        <div class="add-row-modal">
+            <div class="add-row-modal-header">
+                <h3><i class="fas fa-plus"></i> Tambah Baris Manual</h3>
+                <button class="tree-modal-close" id="addRowModalClose" aria-label="Tutup">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="add-row-modal-body">
+                <div class="add-row-field">
+                    <label>Referensi Regulasi</label>
+                    <input type="text" id="addRowReferensi" class="settings-input" />
+                </div>
+                <div class="add-row-field">
+                    <label>Aspek / Domain</label>
+                    <input type="text" id="addRowAspek" class="settings-input" />
+                </div>
+                <div class="add-row-field">
+                    <label>BAB / Pasal / Ayat</label>
+                    <input type="text" id="addRowStruktur" class="settings-input" />
+                </div>
+                <div class="add-row-field">
+                    <label>Ketentuan / Poin Regulasi</label>
+                    <textarea id="addRowKetentuan" class="settings-input" rows="2"></textarea>
+                </div>
+                <div class="add-row-field">
+                    <label>Prosedur Pemeriksaan</label>
+                    <textarea id="addRowPemeriksaan" class="settings-input" rows="2"></textarea>
+                </div>
+                <div class="add-row-field-row">
+                    <div class="add-row-field">
+                        <label>Metode Audit</label>
+                        <input type="text" id="addRowMetode" class="settings-input" />
+                    </div>
+                    <div class="add-row-field">
+                        <label>Kebutuhan Bukti</label>
+                        <input type="text" id="addRowBukti" class="settings-input" />
+                    </div>
+                </div>
+                <div class="add-row-field">
+                    <label>Catatan / Temuan (opsional)</label>
+                    <textarea id="addRowCatatan" class="settings-input" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="add-row-modal-footer">
+                <button class="btn btn-ghost" id="addRowCancelBtn">
+                    <i class="fas fa-xmark"></i> Batal
+                </button>
+                <button class="btn btn-primary" id="addRowSaveBtn">
+                    <i class="fas fa-plus"></i> Tambah Baris
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL: TAMBAH PERSYARATAN MANUAL (Gap Analysis)
+         ============================================================ -->
+    <div class="add-row-modal-overlay" id="gapAddRowModalOverlay" style="display:none;">
+        <div class="add-row-modal">
+            <div class="add-row-modal-header">
+                <h3><i class="fas fa-plus"></i> Tambah Persyaratan Manual</h3>
+                <button class="tree-modal-close" id="gapAddRowModalClose" aria-label="Tutup">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="add-row-modal-body">
+                <div class="add-row-field">
+                    <label>Persyaratan</label>
+                    <textarea id="gapAddPersyaratan" class="settings-input" rows="2"
+                              placeholder="Intisari kewajiban..."></textarea>
+                </div>
+                <div class="add-row-field">
+                    <label>Referensi</label>
+                    <input type="text" id="gapAddReferensi" class="settings-input"
+                           placeholder="mis. PADK 43/2025, Lampiran I, BAB I, huruf a, angka 1, (hal. 22)" />
+                </div>
+                <div class="add-row-field">
+                    <label>Catatan (opsional)</label>
+                    <textarea id="gapAddCatatan" class="settings-input" rows="4"
+                              placeholder="Detail turunan, kewajiban setelah pengakhiran, dll.&#10;Bisa pakai **bold** dan list a., b., c."></textarea>
+                </div>
+            </div>
+            <div class="add-row-modal-footer">
+                <button class="btn btn-ghost" id="gapAddRowCancelBtn">
+                    <i class="fas fa-xmark"></i> Batal
+                </button>
+                <button class="btn btn-primary" id="gapAddRowSaveBtn">
+                    <i class="fas fa-plus"></i> Tambah Persyaratan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL: PREVIEW PROMPT FINAL
+         ============================================================ -->
+    <div class="prompt-preview-overlay" id="promptPreviewOverlay" style="display:none;">
+        <div class="prompt-preview-modal">
+            <div class="prompt-preview-header">
+                <h3><i class="fas fa-eye"></i> Preview Prompt Final</h3>
+                <button class="tree-modal-close" id="promptPreviewClose" aria-label="Tutup">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="prompt-preview-body">
+                <p class="prompt-preview-meta">
+                    Ini adalah prompt lengkap yang akan dikirim ke AI.
+                    Termasuk blok <strong>Core</strong>, <strong>Aturan Wajib</strong>, dan
+                    <strong>Instruksi Tambahan</strong>. Prompt ini <em>tidak dapat diedit di sini</em> —
+                    gunakan untuk memeriksa hasil gabungan.
+                </p>
+                <pre id="promptPreviewPre" class="prompt-preview-pre"></pre>
+                <div class="prompt-preview-stats" id="promptPreviewStats"></div>
+            </div>
+            <div class="prompt-preview-footer">
+                <button class="btn btn-primary" id="promptPreviewCloseBtn">
+                    <i class="fas fa-check"></i> Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+        <!-- ============================================================
+         INTERACTIVE TOUR
+         ============================================================ -->
+    <div class="tour-root" id="tourRoot" style="display:none;" aria-hidden="true">
+        <!-- Spotlight (kotak highlight + overlay via box-shadow) -->
+        <div class="tour-highlight" id="tourHighlight"></div>
+
+        <!-- Overlay full-screen (untuk step tanpa target) -->
+        <div class="tour-overlay-full" id="tourOverlayFull" style="display:none;"></div>
+
+        <!-- Tooltip -->
+        <div class="tour-tooltip" id="tourTooltip">
+            <div class="tour-tooltip-arrow" id="tourArrow"></div>
+            <div class="tour-tooltip-header">
+                <div class="tour-step-counter" id="tourStepCounter">1 / 5</div>
+                <button class="tour-close-btn" id="tourCloseBtn" aria-label="Tutup tour">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="tour-tooltip-body">
+                <h3 class="tour-title" id="tourTitle">Selamat Datang</h3>
+                <p class="tour-text" id="tourText"></p>
+            </div>
+            <div class="tour-tooltip-footer">
+                <button class="tour-btn tour-btn-ghost" id="tourSkipBtn">Lewati</button>
+                <div class="tour-nav">
+                    <button class="tour-btn tour-btn-secondary" id="tourPrevBtn" disabled>
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <button class="tour-btn tour-btn-primary" id="tourNextBtn">
+                        Lanjut <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="tour-progress-dots" id="tourProgressDots"></div>
+        </div>
+    </div>
+
     <div class="toast-container" id="toastContainer"></div>
 
-    <script src="/static/js/script.js" defer></script>
+    <script src="/static/js/script.js?v=9" defer></script>
 </body>
 </html>

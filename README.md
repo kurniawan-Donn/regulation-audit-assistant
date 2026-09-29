@@ -1,324 +1,559 @@
-# Regulation to IT Audit Assistant
+<div align="center">
 
-MVP untuk membantu auditor Teknologi Informasi (IT Audit) membaca regulasi
-dan mengubah ketentuan regulasi menjadi prosedur pemeriksaan audit — tanpa
-perlu membaca dan memilah regulasi satu per satu secara manual.
+# 🛡️ Regulation to IT Audit Assistant
 
-```
-REGULATORY REQUIREMENT  ->  AUDIT INTERPRETATION  ->  AUDIT PROCEDURE
-```
+**Ubah regulasi OJK/BI menjadi kertas kerja audit TI yang siap pakai, dengan bantuan AI.**
 
-Aplikasi ini **bukan** PDF summarizer. Setiap ketentuan regulasi yang relevan
-dengan audit TI diterjemahkan menjadi langkah pemeriksaan yang bisa langsung
-dijalankan auditor (dokumen, observasi, interview, atau evidence lain),
-lengkap dengan referensi sumber (BAB/Pasal/Ayat) yang tetap terjaga.
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Python](https://img.shields.io/badge/python-3.11%2B-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688)
+![License](https://img.shields.io/badge/license-MIT-yellow)
+![Status](https://img.shields.io/badge/status-beta-orange)
 
----
+[Fitur](#-fitur-utama) · [Instalasi](#-instalasi) · [Penggunaan](#-penggunaan) · [API](#-dokumentasi-api) · [Deployment](#-deployment) · [Kontribusi](#-kontribusi)
 
-## Daftar Isi
-
-1. [Problem & Solusi](#problem--solusi)
-2. [Arsitektur](#arsitektur)
-3. [Instalasi](#instalasi)
-4. [Environment Variable](#environment-variable)
-5. [Cara Menjalankan](#cara-menjalankan)
-6. [Cara Menggunakan](#cara-menggunakan)
-7. [API Reference](#api-reference)
-8. [Prompt Engineering AI](#prompt-engineering-ai)
-9. [Keamanan](#keamanan)
-10. [Keterbatasan](#keterbatasan)
-11. [Struktur Proyek](#struktur-proyek)
-12. [Testing](#testing)
-13. [Rencana Pengembangan Selanjutnya](#rencana-pengembangan-selanjutnya)
+</div>
 
 ---
 
-## Problem & Solusi
+## 📖 Tentang
 
-**Masalah:** Auditor TI harus membaca regulasi (POJK/SEOJK/PBI/dll) satu per
-satu secara manual, memilah ketentuan yang relevan dengan audit TI memakan
-waktu lama, dan hasil interpretasi menjadi prosedur pemeriksaan bisa berbeda
-antar auditor.
+**Regulation to IT Audit Assistant** adalah aplikasi web untuk auditor TI internal bank, BPR, dan BPRS yang bekerja dengan regulasi seperti **POJK**, **PADK**, **SEOJK**, dan **PBI**. Aplikasi ini menyediakan dua alur kerja utama:
 
-**Solusi:** Upload satu dokumen regulasi (PDF/TXT) → sistem otomatis
-mengekstrak, mendeteksi struktur (BAB/Pasal/Ayat), mengidentifikasi ketentuan
-yang relevan dengan audit TI, menafsirkannya menjadi prosedur pemeriksaan
-via AI (Gemini), memvalidasi hasilnya, dan mengekspor ke Excel siap pakai.
+| Alur Kerja | Hasil |
+|---|---|
+| **Regulation to Audit** | Prosedur pemeriksaan lengkap dengan aspek, metode, dan kebutuhan bukti |
+| **Gap Analysis** | Daftar persyaratan regulasi sebagai checklist kepatuhan |
 
-## Arsitektur
+**Mengapa memakai tools ini?**
 
-```
-USER -> WEB INTERFACE -> FILE UPLOAD -> TEXT EXTRACTION -> TEXT PREPROCESSING
-     -> STRUCTURE DETECTION -> AI ANALYSIS -> JSON VALIDATION
-     -> TABLE VIEW -> EXPORT EXCEL
-```
+- ⏱️ **Hemat waktu**: analisis dokumen 200 halaman selesai dalam 15–30 menit, bukan 2–3 hari.
+- 🎯 **Konsisten**: struktur output seragam sesuai standar kertas kerja audit.
+- 🔍 **Traceable**: setiap ketentuan memiliki referensi Lampiran/BAB/Pasal/Ayat/Halaman.
+- 🛡️ **Anti-halusinasi**: referensi pasal divalidasi terhadap teks sumber.
+- 💰 **Biaya terkendali**: caching, batching, dan estimasi biaya sebelum eksekusi.
 
-| Tahap | Modul | Fase |
-|---|---|---|
-| Ekstraksi PDF | `app/services/pdf_parser.py` | 2 |
-| Ekstraksi TXT & cleaning | `app/services/text_processor.py` | 2 |
-| Deteksi struktur BAB/Pasal/Ayat/Huruf | `app/services/regulation_parser.py` | 3 |
-| Abstraksi provider AI (Gemini) | `app/services/ai_service.py` | 4 |
-| Prompt regulatory -> audit | `app/prompts/regulation_audit_prompt.py` | 5 |
-| Penghubung prompt + AI | `app/services/audit_analyzer.py` | 5 |
-| Validasi hasil & anti-hallucination | `app/services/validator.py` | 6 |
-| API endpoint & orkestrasi | `app/api/routes.py` | 7 |
-| Frontend upload & tabel hasil | `templates/index.html` | 7 |
-| Export Excel | `app/services/excel_exporter.py` | 8 |
-| **Batching chunk (hemat rate limit)** | `app/services/chunk_batcher.py` | **11** |
+**Prinsip desain**
 
-### Phase 11 — Batching untuk Rate Limit
+- **Kertas kerja dulu, AI kemudian**: auditor tetap pengambil keputusan.
+- **Flag, bukan perbaikan diam-diam**: hasil AI divalidasi dan ditandai, tidak diubah tanpa sepengetahuan pengguna.
+- **Graceful degradation**: kegagalan satu batch tidak menggagalkan seluruh proses.
+- **Kontrol penuh di tangan pengguna**: prompt, model, dan parameter dapat dikustomisasi.
 
-Free tier Gemini API membatasi **jumlah request** (RPD/RPM) jauh lebih ketat
-daripada volume token (TPM). Karena itu, sejak Phase 11, chunk-chunk kecil
-hasil `regulation_parser` **dikelompokkan dulu** (`chunk_batcher.create_batches()`)
-berdasarkan budget karakter (`MAX_CHARS_PER_BATCH`, default 6000) sebelum
-dikirim ke AI — satu batch bisa berisi puluhan chunk sekaligus, dianalisis
-dalam **satu** pemanggilan AI (`audit_analyzer.analyze_chunks_batch()`).
+---
 
-Efek nyata pada dokumen contoh (12 chunk): dari **12 request menjadi 1
-request**. Isi tiap chunk tidak pernah dipotong — hanya dikelompokkan.
-Chunk tunggal yang sendirian sudah melebihi budget tetap dikirim utuh
-sebagai batch tersendiri.
+## ✨ Fitur Utama
 
-Dua pengaman tambahan di `ai_service.py`:
-- `GEMINI_MAX_OUTPUT_TOKENS` — mencegah response batch besar terpotong.
-- `GEMINI_MIN_SECONDS_BETWEEN_REQUESTS` — jeda otomatis antar-request
-  (default 4.5 detik) untuk menjaga batas RPM tidak terlampaui, walau
-  banyak batch diproses berturutan dalam satu upload.
+### 🔍 Parsing Regulasi
+- **Parser dual-mode**: mendukung struktur POJK/PBI/SEOJK/UU (`BAB → Pasal → Ayat → Huruf`) dan PADK berlampiran (`Lampiran → I. → A. → 1. → a. → 1)`).
+- **Pelacakan halaman**: setiap chunk memiliki `page_start` dan `page_end`.
+- **Tree hierarki interaktif**: pilih bagian yang ingin dianalisis.
+- **Pembersihan otomatis**: Daftar Isi dilewati dan nomor halaman dibuang dari konten.
 
-**Desain provider AI mudah diganti** (lihat `ai_service.py`):
+### 🤖 Analisis AI
+- **Gemini API**: default `gemini-2.5-flash`, model dapat diganti lewat UI.
+- **Batching pintar**: banyak chunk per request untuk menghemat rate limit.
+- **Validasi berlapis**: pengecekan anti-halusinasi dan controlled vocabulary.
+- **Tahan gangguan**: retry otomatis untuk error transien dan penanganan error per batch.
 
-```
-AIProvider (abstract)
-    └── GeminiProvider   <- aktif sekarang
-```
+### 📊 Kertas Kerja Audit
+- **10 kolom** standar audit TI: No, Referensi, Aspek, BAB/Pasal/Ayat, Ketentuan, Pemeriksaan, Metode, Bukti, Status, Catatan.
+- **Edit inline**: klik sel, ubah, lalu *blur* untuk menyimpan otomatis.
+- **Progress tracking** dengan progress bar (contoh: "12/42 diperiksa (29%)").
+- **Bulk action**: ubah status atau hapus banyak baris sekaligus.
+- **Tambah baris manual** untuk temuan auditor di luar output AI.
+- **Export Excel** (dropdown status + pewarnaan) dan **PDF** (A4 landscape).
 
-Untuk ganti ke provider lain (OpenAI, Anthropic, dst), buat class baru yang
-extend `AIProvider` dan ubah satu baris di fungsi `get_ai_provider()`.
+### 📋 Gap Analysis
+- **Ekstraksi persyaratan** ke 4 kolom: No, Persyaratan, Referensi, Catatan.
+- **Catatan berformat markdown ringan**: cetak tebal dan nested list.
+- **Filter kata kunci** untuk membatasi analisis dan menghemat biaya.
+- **Status gap manual**: Sesuai / Sebagian / Tidak / N/A, dengan export Excel.
 
-## Instalasi
+### 🎨 UI/UX
+- Mode **Light / Dark / Auto**, responsif di desktop dan mobile.
+- **Pencarian global** lintas semua analisis (`Ctrl+K`).
+- **Interactive tour** 9 langkah untuk pengguna baru.
 
-Prasyarat: Python 3.10+ dan API key Gemini ([dapatkan di sini](https://aistudio.google.com/app/apikey)).
+### ⚙️ Pengaturan Terintegrasi
+- **Model & AI**: API key (masked), model, max tokens, rate limit, batch size.
+- **Prompt AI**: 4 preset (Default, Ketat, Ringkas, Detail) dan editor 3 blok (Core / Locked / User Instructions).
+- **Riwayat, Diagnostik, Panduan**, dan info versi.
+
+### 💰 Hemat Biaya
+- **Cache tingkat file** (SHA-256, TTL 7 hari): unggah file yang sama tidak diparsing ulang.
+- **Cache preview** (TTL 24 jam): analisis ulang tanpa unggah ulang.
+- **Estimasi biaya** (karakter, token, request, Rupiah) sebelum data dikirim ke AI.
+
+---
+
+## 📋 Prasyarat
+
+| Kebutuhan | Versi / Keterangan |
+|---|---|
+| Python | 3.11+ |
+| pip | Versi terbaru |
+| API key Gemini | [Buat di Google AI Studio](https://aistudio.google.com/app/apikey) |
+
+---
+
+## 🚀 Instalasi
+
+**1. Clone repository**
 
 ```bash
-# 1. Masuk ke folder project
+git clone https://github.com/<username>/regulation-audit-assistant.git
 cd regulation-audit-assistant
-
-# 2. Buat virtual environment
-python3 -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
-
-# 3. Install semua dependency
-pip install -r requirements.txt
-
-# 4. Siapkan file environment
-cp .env.example .env
-# lalu buka .env dan isi GEMINI_API_KEY dengan API key Anda
 ```
 
-## Environment Variable
+**2. Buat dan aktifkan virtual environment**
 
-Semua konfigurasi dibaca dari file `.env` (lihat `.env.example`):
+```bash
+python -m venv venv
 
-| Variable | Wajib | Keterangan |
-|---|---|---|
-| `GEMINI_API_KEY` | Ya | API key Gemini. **Jangan pernah** commit nilai asli ke git. |
-| `GEMINI_MODEL` | Tidak | Default `gemini-2.5-flash`. Bisa diganti model Gemini lain. |
-| `GEMINI_MAX_OUTPUT_TOKENS` | Tidak | Default `8192`. Naikkan jika batch besar sering menghasilkan JSON terpotong. |
-| `GEMINI_MIN_SECONDS_BETWEEN_REQUESTS` | Tidak | Default `4.5`. Jeda antar-request ke Gemini untuk menjaga limit RPM. |
-| `MAX_CHARS_PER_BATCH` | Tidak | Default `6000`. Budget karakter per batch chunk (Phase 11) — lebih besar = lebih sedikit request tapi risiko output terpotong lebih tinggi. |
-| `APP_ENV` | Tidak | `development` / `production`. |
-| `DEBUG` | Tidak | `true` / `false`. |
-| `MAX_UPLOAD_SIZE_MB` | Tidak | Default `20`. Batas ukuran file upload. |
+# Windows
+venv\Scripts\activate
 
-## Cara Menjalankan
+# macOS / Linux
+source venv/bin/activate
+```
+
+**3. Instal dependensi**
+
+```bash
+pip install -r requirements.txt
+```
+
+**4. Siapkan environment**
+
+```bash
+cp .env.example .env
+```
+
+Isi minimal `GEMINI_API_KEY` di file `.env`:
+
+```env
+GEMINI_API_KEY=your_api_key_here
+```
+
+> 💡 API key juga dapat diisi lewat **Pengaturan → Model & AI** setelah aplikasi berjalan.
+
+### ⚙️ Konfigurasi
+
+Prioritas: **Runtime settings (UI) > `.env` > default**.
+
+```env
+# Aplikasi
+APP_NAME="Regulation to IT Audit Assistant"
+APP_ENV=development
+DEBUG=true
+
+# AI Provider
+GEMINI_API_KEY=your_api_key_here
+GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MAX_OUTPUT_TOKENS=8192
+GEMINI_MIN_SECONDS_BETWEEN_REQUESTS=4.5
+
+# Batching (semakin besar, semakin sedikit request)
+MAX_CHARS_PER_BATCH=6000
+
+# Upload
+MAX_UPLOAD_SIZE_MB=10
+
+# Estimasi biaya (sesuaikan dengan harga terbaru)
+GEMINI_INPUT_PRICE_PER_1M_USD=0.30
+GEMINI_OUTPUT_PRICE_PER_1M_USD=2.50
+USD_TO_IDR=16000
+```
+
+**Pilihan model**
+
+| Model | Kecepatan | Akurasi | Biaya | Cocok untuk |
+|---|---|---|---|---|
+| `gemini-2.5-flash` | Cepat | Baik | Murah | Default, semua kasus |
+| `gemini-2.5-pro` | Sedang | Terbaik | Mahal | Dokumen kompleks |
+| `gemini-2.0-flash` | Sangat cepat | Cukup | Sangat murah | Dokumen panjang, screening |
+| `gemini-2.0-flash-lite` | Paling cepat | Dasar | Paling murah | Draft cepat |
+
+> ℹ️ Ketersediaan dan harga model dapat berubah. Periksa [dokumentasi Gemini](https://ai.google.dev/gemini-api/docs/models) untuk informasi terbaru.
+
+---
+
+## ▶️ Penggunaan
+
+Jalankan server:
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-Buka `http://127.0.0.1:8000/` di browser — halaman upload akan langsung tampil.
+Buka **http://localhost:8000** di browser. Dokumentasi Swagger tersedia di **http://localhost:8000/docs**.
 
-Endpoint tambahan:
-- `http://127.0.0.1:8000/health` — health check (JSON)
-- `http://127.0.0.1:8000/docs` — dokumentasi API otomatis (Swagger UI)
+### Alur 1: Regulation to Audit
 
-## Cara Menggunakan
+1. **Unggah** regulasi (PDF/TXT, maks. 10 MB).
+2. Klik **Baca Struktur** (5–30 detik).
+3. **Pilih bagian** di tree modal. Centang parent untuk memilih semua anaknya.
+4. Periksa **estimasi biaya** di footer modal.
+5. Klik **Analisis Bagian Terpilih** (1–5 menit).
+6. **Review hasil** di tabel 10 kolom. Baris dengan badge ⚠️ ditandai oleh validator.
+7. Isi **Status Kepatuhan** (Belum Diaudit / Patuh / Sebagian / Tidak / N/A) dan **Catatan / Temuan**.
+8. **Export** ke Excel atau PDF.
 
-1. Buka `http://127.0.0.1:8000/`.
-2. Upload file regulasi (**PDF atau TXT, dokumen publik saja** — lihat [Keamanan](#keamanan)).
-3. (Opsional) Isi "Nama Regulasi" agar kolom Referensi Regulasi di hasil lebih akurat, mis. `POJK 11/POJK.03/2022`. Jika dikosongkan, nama file dipakai sebagai fallback.
-4. Klik **Analisis Regulasi**, tunggu proses selesai (bisa beberapa menit tergantung panjang dokumen — setiap potongan teks = 1 pemanggilan AI).
-5. Hasil tampil sebagai tabel dengan status **Valid** / **Perlu Ditinjau**. Item yang di-flag disertai alasan (lihat [Prompt Engineering AI](#prompt-engineering-ai) bagian anti-hallucination).
-6. Klik **Export Excel** untuk mengunduh `audit_checklist_<nama_regulasi>.xlsx` — siap dipakai auditor (header bold, freeze row, auto filter, baris yang perlu ditinjau di-highlight).
+### Alur 2: Gap Analysis
 
-## API Reference
+1. Buka **Gap Analysis** di sidebar dan unggah regulasi.
+2. *(Opsional)* Isi **Batasi ke Bagian Tertentu**, misalnya `pengakhiran`, `keamanan siber`, atau `PPJTI`. Ini dapat menghemat biaya secara signifikan pada dokumen panjang.
+3. Klik **Ekstrak Persyaratan**.
+4. Isi status gap (Sesuai / Sebagian / Tidak / N/A), lalu **export Excel**.
 
-### `POST /api/analyze`
+### Alur 3: Pencarian Global
 
-Upload dan analisis satu dokumen regulasi.
+Buka **Cari Global**, ketik kata kunci (min. 2 karakter), lalu klik hasil untuk membuka dokumen asal dengan baris yang di-*highlight*.
 
-**Request:** `multipart/form-data`
-| Field | Tipe | Wajib | Keterangan |
-|---|---|---|---|
-| `file` | file | Ya | File `.pdf` atau `.txt` |
-| `nama_regulasi` | text | Tidak | Nama/nomor regulasi untuk kolom Referensi Regulasi |
+### Alur 4: Kustomisasi Prompt & Model
 
-```bash
-curl -X POST http://127.0.0.1:8000/api/analyze \
-  -F "file=@tests/sample_files/sample_regulation.txt" \
-  -F "nama_regulasi=PERATURAN CONTOH 01/2026"
-```
+- **Prompt**: *Pengaturan → Prompt AI* → pilih tool dan preset → ubah Prompt Inti / Instruksi Tambahan → **Preview Prompt Final** → **Simpan**.
+- **Model**: *Pengaturan → Model & AI* → masukkan API key → pilih model → **Test Koneksi** → **Simpan**.
 
-**Response `200 OK`:**
-```json
-{
-  "result_id": "35975ea4892e42fea982b8fdd1839c9a",
-  "filename": "sample_regulation.txt",
-  "total_chunks": 12,
-  "total_ketentuan": 5,
-  "total_valid": 4,
-  "total_flagged": 1,
-  "results": [
-    {
-      "referensi_regulasi": "PERATURAN CONTOH 01/2026",
-      "bab_pasal_ayat": "BAB V - Pasal 20 - (1)",
-      "point_ketentuan": "Kewajiban kebijakan keamanan informasi",
-      "pemeriksaan": "Periksa keberadaan kebijakan keamanan informasi yang telah ditetapkan dan disahkan oleh pihak berwenang.",
-      "is_valid": true,
-      "validation_notes": []
-    }
-  ],
-  "chunk_errors": []
-}
-```
+### Pintasan Keyboard
 
-**Response error:**
-| Status | Kondisi |
+| Pintasan | Fungsi |
 |---|---|
-| `400` | Ekstensi file tidak didukung, file kosong, atau ukuran melebihi batas |
-| `422` | Dokumen tidak bisa diekstrak/tidak ada teks yang bisa dianalisis |
+| `Ctrl + K` | Fokus ke kotak pencarian |
+| `Esc` | Tutup modal / panel |
 
-### `GET /api/results/{result_id}`
+---
 
-Ambil ulang hasil analisis yang sudah pernah diproses (tanpa upload ulang).
+## 🏗️ Arsitektur
 
-```bash
-curl http://127.0.0.1:8000/api/results/35975ea4892e42fea982b8fdd1839c9a
+```text
+┌──────────────────────────────────────────────────────┐
+│              FRONTEND (Vanilla JS, no build)         │
+└──────────────────────┬───────────────────────────────┘
+                       │ REST API (JSON)
+┌──────────────────────▼───────────────────────────────┐
+│                   FASTAPI BACKEND                    │
+│  ┌────────────────────────────────────────────────┐  │
+│  │ Services: pdf_parser · regulation_parser ·     │  │
+│  │ chunk_batcher · ai_service · audit_analyzer ·  │  │
+│  │ validator · excel/pdf_exporter · caching       │  │
+│  └────────────────────────────────────────────────┘  │
+└──────────────────────┬───────────────────────────────┘
+                       │
+┌──────────────────────▼───────────────────────────────┐
+│ STORAGE (filesystem): uploads · outputs · cache ·    │
+│ data (settings.json, prompts.json)                   │
+└──────────────────────────────────────────────────────┘
 ```
-`404` jika `result_id` tidak ditemukan.
 
-### `GET /api/export/{result_id}`
+| Layer | Teknologi |
+|---|---|
+| **Backend** | FastAPI 0.115, Pydantic v2, Uvicorn |
+| **AI** | Google Gemini API (`google-generativeai`) |
+| **Parsing PDF** | PyMuPDF (fitz) |
+| **Export** | openpyxl (Excel), reportlab (PDF) |
+| **Frontend** | Vanilla JS, HTML5, CSS3, Font Awesome 6 |
+| **Storage** | Filesystem (JSON) |
 
-Unduh hasil analisis sebagai file Excel.
+---
 
-```bash
-curl -OJ http://127.0.0.1:8000/api/export/35975ea4892e42fea982b8fdd1839c9a
-```
-`404` jika `result_id` tidak ditemukan, `422` jika tidak ada ketentuan untuk diekspor.
+## 📁 Struktur Folder
 
-## Prompt Engineering AI
-
-System prompt (`app/prompts/regulation_audit_prompt.py`) mewajibkan AI untuk:
-- **Tidak mengarang** isi regulasi, nomor pasal/ayat, atau kewajiban baru.
-- **Melewati** (bukan memaksakan) ketentuan yang tidak relevan dengan audit TI atau ambigu.
-- Mengeluarkan **JSON array murni**, tanpa markdown, tanpa penjelasan tambahan.
-
-Dua lapis pengaman tambahan di luar prompt:
-1. **Retry otomatis** (`ai_service.py`) — untuk error jaringan transient dan response yang bukan JSON valid.
-2. **Anti-hallucination check** (`validator.py`) — mencocokkan referensi BAB/Pasal/Ayat yang disebut AI terhadap teks sumber asli. Jika tidak ditemukan, item **tidak dibuang**, hanya diberi flag `is_valid: false` agar auditor menilai sendiri.
-
-## Keamanan
-
-- API key **tidak pernah** hardcode — selalu dibaca dari `.env` (lihat `app/config.py`), dan `.env` masuk `.gitignore`.
-- **Hanya untuk regulasi publik** (POJK, SEOJK, PBI, PADG, dll). **Jangan upload** dokumen rahasia, data nasabah, hasil audit internal, konfigurasi sistem, atau data pribadi — catatan ini juga ditampilkan di UI.
-- Tidak ada autentikasi/multi-user pada MVP ini — jangan deploy ke jaringan publik tanpa menambahkan lapisan keamanan (reverse proxy + auth) terlebih dahulu.
-- File upload disimpan sementara di `uploads/` — folder ini di-gitignore, disarankan dibersihkan berkala di lingkungan produksi.
-
-## Keterbatasan
-
-- **Parser struktur regulasi bersifat heuristik** (regex berbasis pola BAB/Pasal/Ayat/Huruf umum) — andal untuk dokumen berformat rapi, kurang akurat untuk PDF hasil scan/OCR buruk atau format tidak baku.
-- **Konsistensi AI tidak 100% terjamin** — walau prompt ketat dan `temperature=0`, model bisa sesekali berbeda hasil antar run. Validator (Phase 6) adalah jaring pengaman, bukan jaminan mutlak.
-- **Trade-off batching (Phase 11):** menggabungkan chunk mengurangi jumlah request secara drastis, tapi kalau AI gagal (timeout/error) untuk satu batch, SELURUH chunk dalam batch itu gagal bersamaan (bukan hanya satu chunk seperti sebelumnya). `MAX_CHARS_PER_BATCH` yang lebih kecil mengurangi risiko ini dengan konsekuensi jumlah request lebih banyak.
-- **Proses sinkron** — request `/api/analyze` menunggu semua batch selesai dianalisis sebelum merespons; dokumen sangat panjang bisa memakan waktu beberapa menit, ditambah jeda `GEMINI_MIN_SECONDS_BETWEEN_REQUESTS` antar-batch.
-- **Penyimpanan hasil berbasis file JSON lokal** (`outputs/{id}.json`), bukan database — cukup untuk MVP single-user, tidak untuk multi-user/production scale.
-
-## Struktur Proyek
-
-```
+```text
 regulation-audit-assistant/
 ├── app/
-│   ├── main.py                          # Entry point FastAPI
-│   ├── config.py                        # Konfigurasi (pydantic-settings)
+│   ├── main.py                     # Entry point
+│   ├── config.py                   # Konfigurasi dari .env
 │   ├── api/
-│   │   └── routes.py                    # POST /api/analyze, GET /api/results, GET /api/export
-│   ├── services/
-│   │   ├── pdf_parser.py                # extract_pdf_text()
-│   │   ├── text_processor.py            # extract_txt_text(), clean_text()
-│   │   ├── regulation_parser.py         # parse_regulation_structure()
-│   │   ├── chunk_batcher.py             # create_batches() - Phase 11
-│   │   ├── ai_service.py                # AIProvider, GeminiProvider
-│   │   ├── audit_analyzer.py            # analyze_chunk(), analyze_chunks_batch()
-│   │   ├── validator.py                 # validate_results()
-│   │   └── excel_exporter.py            # export_results_to_excel()
+│   │   ├── routes.py               # Endpoint utama
+│   │   └── prompt_routes.py        # Endpoint prompt editor
 │   ├── models/
-│   │   └── schemas.py                   # Pydantic response models
-│   └── prompts/
-│       └── regulation_audit_prompt.py   # SYSTEM_PROMPT, build_user_prompt()
-├── templates/
-│   └── index.html                       # Halaman upload (self-contained)
-├── static/                              # (disiapkan untuk aset statis, belum dipakai)
-├── uploads/                             # File upload sementara (gitignored)
-├── outputs/                             # Hasil JSON & Excel (gitignored)
+│   │   └── schemas.py              # Skema Pydantic
+│   ├── prompts/
+│   │   ├── aspects.py              # Controlled vocabulary
+│   │   ├── regulation_audit_prompt.py
+│   │   ├── requirements_prompt.py
+│   │   └── prompt_presets.py       # 4 preset prompt
+│   └── services/
+│       ├── ai_service.py           # Provider Gemini + retry
+│       ├── audit_analyzer.py       # Analyzer Tool 1
+│       ├── requirements_analyzer.py# Analyzer Tool 2
+│       ├── chunk_batcher.py        # Logika batching
+│       ├── cost_estimator.py       # Estimasi biaya
+│       ├── excel_exporter.py       # Export Excel
+│       ├── pdf_exporter.py         # Export PDF
+│       ├── pdf_parser.py           # Ekstraksi PyMuPDF
+│       ├── text_processor.py       # Pembersihan teks
+│       ├── regulation_parser.py    # Parser state machine
+│       ├── structure_tree.py       # Pembangun tree hierarki
+│       ├── validator.py            # Anti-halusinasi
+│       ├── preview_cache.py        # Cache berbasis file
+│       ├── runtime_settings.py     # Konfigurasi via UI
+│       └── prompt_manager.py       # Penyimpanan prompt override
+├── static/                         # CSS & JS
+├── templates/index.html            # Single-page app
 ├── tests/
-│   ├── conftest.py                      # Fixture pytest bersama
-│   ├── sample_files/                    # Dokumen contoh (fiktif) untuk testing
-│   ├── test_phase9_extraction.py        # pytest: ekstraksi & struktur (skenario 1-6)
-│   ├── test_phase9_ai_errors.py         # pytest: error handling AI (skenario 7-9)
-│   ├── test_phase9_relevance.py         # pytest: filtering non-TI (skenario 10)
-│   ├── test_phase11_batching.py         # pytest: batching, prompt multi-chunk, rate limit pacing
-│   ├── manual_test_phase2.py            # Script manual per fase (opsional, referensi)
-│   ├── manual_test_phase3.py
-│   ├── manual_test_phase4.py
-│   ├── manual_test_phase7.py
-│   ├── manual_test_phase8.py
-│   ├── generate_sample_pdf.py           # Utility pembuat sample PDF
-│   └── evaluate_phase5_prompt.py        # Evaluasi kualitas prompt dgn Gemini asli
+├── data/                           # Runtime (gitignored)
+├── uploads/                        # File unggahan (gitignored)
+├── outputs/                        # Hasil analisis (gitignored)
+├── cache/                          # Cache preview & parsed (gitignored)
 ├── .env.example
-├── .gitignore
 ├── requirements.txt
 └── README.md
 ```
 
-## Testing
+---
 
-```bash
-# Test otomatis (mocked, tidak perlu API key/network Gemini)
-pytest tests/ -v
+## 🔌 Dokumentasi API
 
-# Script manual per fase (referensi historis pengembangan, opsional dijalankan)
-python tests/manual_test_phase2.py
-python tests/manual_test_phase3.py
-python tests/manual_test_phase4.py
-python tests/manual_test_phase7.py
-python tests/manual_test_phase8.py
+Dokumentasi interaktif lengkap tersedia di `/docs` (Swagger UI).
 
-# Evaluasi kualitas prompt AI dengan Gemini SUNGGUHAN (butuh GEMINI_API_KEY valid di .env)
-python tests/evaluate_phase5_prompt.py
+### Preview & Analisis
+
+| Method | Endpoint | Deskripsi |
+|---|---|---|
+| `POST` | `/api/preview` | Unggah dan parsing file (tanpa AI) |
+| `GET` | `/api/preview/{id}` | Ambil preview dari cache |
+| `POST` | `/api/estimate` | Estimasi biaya dan waktu |
+| `POST` | `/api/analyze` | Analisis AI: Regulation to Audit |
+| `POST` | `/api/analyze-requirements` | Analisis AI: Gap Analysis |
+
+### Manajemen Hasil
+
+| Method | Endpoint | Deskripsi |
+|---|---|---|
+| `GET` | `/api/results/{id}` | Ambil hasil Regulation to Audit |
+| `PATCH` | `/api/results/{id}/items/{idx}` | Edit satu item |
+| `PATCH` | `/api/results/{id}/items/bulk` | Bulk update status/catatan |
+| `POST` | `/api/results/{id}/items` | Tambah baris manual |
+| `DELETE` | `/api/results/{id}/items` | Hapus baris terpilih |
+| `GET` | `/api/requirements/{id}` | Ambil hasil Gap Analysis |
+| `PATCH` | `/api/requirements/{id}/items/{idx}` | Edit satu persyaratan |
+| `PATCH` | `/api/requirements/{id}/items/bulk` | Bulk update status gap |
+| `POST` | `/api/requirements/{id}/items` | Tambah persyaratan |
+| `DELETE` | `/api/requirements/{id}/items` | Hapus persyaratan |
+
+### Export
+
+| Method | Endpoint | Deskripsi |
+|---|---|---|
+| `GET` | `/api/export/{id}` | Excel (Regulation to Audit) |
+| `GET` | `/api/export-pdf/{id}` | PDF (Regulation to Audit) |
+| `GET` | `/api/export-requirements/{id}` | Excel (Gap Analysis) |
+
+### Pengaturan, Prompt, Pencarian
+
+| Method | Endpoint | Deskripsi |
+|---|---|---|
+| `GET` / `PUT` | `/api/settings` | Baca / ubah konfigurasi runtime (API key di-mask) |
+| `POST` | `/api/settings/test-connection` | Uji koneksi Gemini |
+| `GET` | `/api/diagnostics` | Info diagnostik server |
+| `GET` / `PUT` | `/api/prompts/{tool}` | Baca / ubah prompt override |
+| `POST` | `/api/prompts/{tool}/reset` | Reset prompt ke default |
+| `POST` | `/api/prompts/{tool}/preview` | Preview prompt final |
+| `GET` | `/api/prompts/{tool}/presets` | Daftar preset |
+| `GET` | `/api/search` | Pencarian lintas dokumen |
+| `GET` | `/health` | Health check |
+
+- `{tool}` bernilai `regulation_audit` atau `gap_analysis`.
+- Parameter `/api/search`: `q` (wajib, min. 2 karakter), `tools` (`all` / `regulation_audit` / `gap_analysis`), `days`, `limit` (default 100, maks. 500).
+
+---
+
+## 🌐 Deployment
+
+| Opsi | Biaya | Kelebihan | Catatan |
+|---|---|---|---|
+| **Oracle Cloud Always Free** ⭐ | Gratis | Storage persisten, always-on | Setup 60–90 menit, perlu dasar SSH |
+| **Railway** | Berbayar | Setup ±5 menit, tanpa urusan SSL | Pasang volume persisten |
+| **Render (free)** | Gratis | Setup ±10 menit | Sleep saat idle; storage ephemeral |
+| **VPS umum** | ±$5–6/bln | Setup cepat | Pilih region Singapore |
+| **Docker** | — | Portabel | Lihat di bawah |
+
+> ⚠️ **Vercel tidak cocok**: analisis AI berjalan lama, membutuhkan penyimpanan persisten, dan file unggahan bisa melebihi batas request.
+
+### Docker
+
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY app/ ./app/
+COPY static/ ./static/
+COPY templates/ ./templates/
+
+RUN mkdir -p data uploads outputs cache
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
-`pytest tests/ -v` mencakup 10 skenario wajib: PDF berbasis teks, TXT, PDF
-panjang, PDF berstruktur BAB/Pasal, file kosong, file corrupt, AI timeout,
-API error, invalid JSON, dan ketentuan non-relevan dengan audit TI.
+```bash
+docker build -t audit-assistant .
+docker run -d -p 8000:8000 \
+  -e GEMINI_API_KEY=your_api_key_here \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/uploads:/app/uploads \
+  -v $(pwd)/outputs:/app/outputs \
+  -v $(pwd)/cache:/app/cache \
+  --name audit-app \
+  audit-assistant
+```
 
-## Rencana Pengembangan Selanjutnya
+### Kebutuhan Resource (±5 pengguna bersamaan)
 
-Di luar cakupan MVP ini (lihat juga bagian Keterbatasan):
+| Resource | Minimum | Disarankan |
+|---|---|---|
+| CPU | 1 vCPU | 2 vCPU |
+| RAM | 2 GB | 4 GB |
+| Storage | 20 GB | 50 GB |
 
-- **Batching adaptif** — saat ini `MAX_CHARS_PER_BATCH` statis; bisa dikembangkan agar otomatis menyesuaikan ukuran batch berdasarkan tier/limit akun Gemini yang terdeteksi.
-- **Pemrosesan asinkron** — jalankan analisis di background job (mis. Celery/RQ) dengan polling status, agar tidak menunggu di satu request HTTP.
-- **Multi-dokumen & database** — dukungan analisis lintas regulasi, riwayat hasil tersimpan permanen (saat ini hanya file JSON lokal).
-- **Autentikasi & multi-user** — diperlukan sebelum deploy ke luar lingkungan lokal/internal terbatas.
-- **Parser struktur yang lebih robust** — menangani format regulasi tidak baku atau hasil OCR dengan lebih baik.
-- **Provider AI alternatif** — abstraksi `AIProvider` sudah disiapkan; tinggal implementasi `OpenAIProvider`/`AnthropicProvider` bila diperlukan.
+Beban utama ada di Gemini API, bukan di server.
+
+---
+
+## 🧪 Testing
+
+```bash
+pytest tests/ -v
+```
+
+**Checklist manual setelah perubahan:**
+
+- [ ] Unggah PDF → tree preview muncul
+- [ ] Pilih bagian → analisis → hasil muncul
+- [ ] Edit sel inline dan bulk update status tersimpan
+- [ ] Export Excel (10 kolom) dan PDF (layout) benar
+- [ ] Gap Analysis, Cari Global, Panel Pengaturan, dan Prompt Editor berfungsi
+- [ ] Dark mode dan interactive tour berjalan normal
+
+---
+
+## ❓ FAQ
+
+<details>
+<summary><b>Berapa biaya penggunaannya?</b></summary>
+
+Tools ini gratis. Biaya hanya berasal dari Gemini API, dengan perkiraan **Rp 500–3.000 per dokumen 200 halaman** (bergantung model dan harga saat ini). Hemat dengan memilih bagian spesifik, memakai model yang lebih murah, dan memanfaatkan cache.
+</details>
+
+<details>
+<summary><b>Apakah aman mengunggah dokumen?</b></summary>
+
+Aplikasi tidak menyimpan data ke cloud pihak ketiga. Konten hanya dikirim ke Gemini API saat analisis. Aman untuk regulasi publik, tetapi **jangan unggah dokumen rahasia atau data klien**.
+</details>
+
+<details>
+<summary><b>Bisa dipakai multi-user?</b></summary>
+
+Belum ada sistem login. Tim kecil dapat mengakses satu instance bersamaan, tetapi data tidak terisolasi per pengguna. Kontribusi fitur multi-user sangat diterima.
+</details>
+
+<details>
+<summary><b>Mengapa analisis lama?</b></summary>
+
+Waktu bergantung pada jumlah chunk (±30–60 detik per batch), rate limit (jeda 4,5 detik antar request), dan model yang dipakai. Untuk dokumen besar, analisis per bagian.
+</details>
+
+<details>
+<summary><b>Muncul error "Your project has been denied access"?</b></summary>
+
+Periksa: (1) API key valid lewat **Test Koneksi**, (2) rate limit, tunggu 15–30 menit, (3) nama model valid, (4) status project Google Cloud.
+</details>
+
+<details>
+<summary><b>Hasil kosong untuk pasal tertentu?</b></summary>
+
+Kemungkinan pasal hanya berisi definisi, tidak relevan dengan audit TI, atau prompt/validasi terlalu ketat. Coba preset **Default** atau **Detail**, dan periksa `validation_notes` pada baris terkait.
+</details>
+
+<details>
+<summary><b>Data hilang setelah restart?</b></summary>
+
+Pada platform dengan storage ephemeral (mis. Render free tier), data hilang saat redeploy. Gunakan VPS atau volume persisten.
+</details>
+
+---
+
+## ⚠️ Disclaimer
+
+Aplikasi ini adalah **alat bantu**, bukan pengganti pertimbangan profesional auditor. **Hasil AI harus selalu diverifikasi** terhadap dokumen asli oleh auditor yang kompeten sebelum digunakan dalam keputusan audit formal.
+
+- ✅ **Gunakan untuk**: regulasi publik (POJK, PADK, SEOJK, PBI), dokumen yang boleh dibagikan ke pihak ketiga, dan latihan/simulasi audit.
+- ❌ **Jangan unggah**: dokumen rahasia klien, data sensitif nasabah/keuangan, dokumen internal perusahaan, atau file pribadi.
+- API key disimpan di `data/settings.json` dalam bentuk teks biasa. Lindungi akses ke server dan jangan meng-commit folder `data/`.
+
+Pengguna bertanggung jawab penuh atas keputusan audit yang dibuat berdasarkan hasil aplikasi ini.
+
+---
+
+## 🤝 Kontribusi
+
+Kontribusi berupa laporan bug, fitur, dokumentasi, maupun perbaikan typo sangat diterima.
+
+1. **Fork** repository ini.
+2. Buat branch fitur:
+```bash
+   git checkout -b feature/nama-fitur
+```
+3. **Commit** perubahan dengan format `[kategori] Deskripsi singkat`:
+```bash
+   git commit -m "[feat] Tambah dukungan DOCX"
+```
+4. **Push** dan buka **Pull Request**:
+```bash
+   git push origin feature/nama-fitur
+```
+
+**Panduan gaya**
+
+- **Python**: PEP 8, type hints pada fungsi publik, docstring Google style, format dengan `black app/`.
+- **JavaScript**: Vanilla JS (ES2020+), gunakan `const`/`let`, nama variabel deskriptif.
+
+**Ide kontribusi**
+
+- **Backend**: dukungan DOCX, OCR untuk PDF hasil scan, RAG dengan vector DB, provider AI alternatif, perbandingan regulasi lama vs revisi.
+- **Frontend**: PWA, mode offline, editor rich text untuk kolom catatan.
+- **DevOps**: Docker Compose, CI/CD dengan GitHub Actions, monitoring, backup otomatis.
+- **Keamanan**: autentikasi dan isolasi data multi-user.
+
+**Melaporkan bug**: buka Issue dengan deskripsi (aktual vs harapan), langkah reproduksi, environment (OS, Python, browser), screenshot, dan log traceback.
+
+---
+
+## 📝 Changelog
+
+### v1.0.0 — September 2026
+- Parser dual-mode (POJK + PADK) dan tree hierarki interaktif
+- Analisis AI dengan Gemini, validasi anti-halusinasi
+- Kertas kerja audit 10 kolom (editable) dan Gap Analysis
+- Export Excel dan PDF, pencarian global
+- Panel pengaturan terintegrasi, prompt editor dengan 4 preset
+- Cache SHA-256, interactive tour, mode Light/Dark
+
+---
+
+## 📄 Lisensi
+
+Proyek ini dilisensikan di bawah [MIT License](LICENSE). Bebas digunakan, dimodifikasi, dan didistribusikan.
+
+## 👤 Penulis
+
+**[Nama Anda]**
+GitHub: [@username](https://github.com/username) · LinkedIn: [linkedin.com/in/username](https://linkedin.com/in/username) · Email: your.email@example.com
+
+## 🙏 Ucapan Terima Kasih
+
+[FastAPI](https://fastapi.tiangolo.com/) · [Google Gemini](https://ai.google.dev/) · [PyMuPDF](https://pymupdf.readthedocs.io/) · [openpyxl](https://openpyxl.readthedocs.io/) · [reportlab](https://www.reportlab.com/) · [Font Awesome](https://fontawesome.com/) · komunitas auditor TI Indonesia.
+
+<div align="center">
+
+Dibuat dengan ❤️ untuk auditor Indonesia · ⭐ Beri bintang jika proyek ini bermanfaat!
+
+[⬆ Kembali ke atas](#️-regulation-to-it-audit-assistant)
+
+</div>

@@ -7,15 +7,19 @@ Desain:
         |
         +-- GeminiProvider   <- dipakai sekarang
 
-Nantinya provider lain (OpenAIProvider, AnthropicProvider, LocalLLMProvider)
-tinggal dibuat sebagai subclass baru dari AIProvider tanpa mengubah kode
-yang memanggilnya (routes.py, dsb. cukup memanggil get_ai_provider()).
+Provider lain (OpenAIProvider, AnthropicProvider, LocalLLMProvider) tinggal
+dibuat sebagai subclass baru dari AIProvider tanpa mengubah kode yang
+memanggilnya (routes.py, dsb. cukup memanggil get_ai_provider()).
 
 Dua lapis retry yang berbeda tujuannya:
 1. Retry jaringan (di dalam GeminiProvider.generate_text) - untuk error
    transient seperti timeout, service unavailable, rate limit.
 2. Retry parsing (di dalam AIProvider.generate_json) - untuk kasus
    response AI berhasil didapat tapi bukan JSON valid.
+
+Runtime Settings:
+Provider membaca API key + model dari runtime settings (data/settings.json)
+dengan prioritas tertinggi, fallback ke .env.
 """
 
 import json
@@ -37,6 +41,52 @@ _RETRYABLE_GOOGLE_EXCEPTIONS = (
     google_exceptions.InternalServerError,
     google_exceptions.TooManyRequests,
 )
+
+# Error permanen — pesan diperjelas, TIDAK di-retry.
+_PERMANENT_GOOGLE_EXCEPTIONS = (
+    google_exceptions.PermissionDenied,
+    google_exceptions.Unauthenticated,
+    google_exceptions.InvalidArgument,
+    google_exceptions.NotFound,
+)
+
+
+def _humanize_google_error(exc: Exception) -> str:
+    """Ubah exception Google menjadi pesan yang lebih bisa ditindaklanjuti user."""
+    msg = str(exc)
+    lowered = msg.lower()
+    exc_name = type(exc).__name__.lower()
+
+    if "permission" in exc_name or "denied access" in lowered:
+        if "quota" in lowered or "rate" in lowered:
+            return (
+                "Akses ke Gemini API ditolak (403). Kemungkinan: "
+                "(1) quota harian free tier sudah habis, atau "
+                "(2) API key kena rate-limit sementara. "
+                "Solusi: tunggu 15–60 menit, cek quota di "
+                "https://aistudio.google.com/app/apikey, atau ganti API key."
+            )
+        return (
+            "Akses ke Gemini API ditolak (403 — Permission Denied). "
+            "Kemungkinan: (a) API key sudah di-disable, "
+            "(b) restriction API key terlalu ketat, "
+            "(c) model tidak valid, atau (d) project di-suspend. "
+            "Cek Google Cloud Console → APIs & Services → Credentials."
+        )
+
+    if "unauthenticated" in exc_name or "api key" in lowered:
+        return (
+            "API key tidak valid atau tidak dikenali (401). "
+            "Pastikan API key di panel Pengaturan sudah benar."
+        )
+
+    if "model" in lowered or "not found" in lowered:
+        return (
+            f"Model Gemini tidak dikenali. Cek model di panel Pengaturan. "
+            f"Detail: {msg}"
+        )
+
+    return f"Gagal memanggil Gemini API: {msg}"
 
 
 class AIProviderError(Exception):
@@ -64,8 +114,7 @@ class AIProvider(ABC):
                 native (seperti Gemini) akan memaksa output berupa JSON.
 
         Raises:
-            AIProviderError: jika request gagal (timeout, API error, dsb.)
-                setelah seluruh retry jaringan habis.
+            AIProviderError: jika request gagal setelah semua retry.
         """
         raise NotImplementedError
 
@@ -73,11 +122,11 @@ class AIProvider(ABC):
         self, system_prompt: str, user_prompt: str, max_retries: int = 2
     ) -> Any:
         """
-        Sama seperti generate_text(), tapi hasilnya di-parse menjadi
-        object Python (list/dict) hasil json.loads().
+        Sama seperti generate_text(), tapi hasilnya di-parse menjadi object
+        Python (list/dict) hasil json.loads().
 
-        Jika hasil bukan JSON valid, prompt akan dikirim ulang dengan
-        peringatan tambahan, maksimal `max_retries` kali.
+        Jika hasil bukan JSON valid, prompt dikirim ulang dengan peringatan
+        tambahan, maksimal `max_retries` kali.
 
         Raises:
             AIResponseParsingError: jika tetap gagal setelah semua retry.
@@ -120,7 +169,12 @@ def _parse_json_response(raw_text: str) -> Any:
 
 
 class GeminiProvider(AIProvider):
-    """Implementasi AIProvider menggunakan Google Gemini API."""
+    """
+    Implementasi AIProvider menggunakan Google Gemini API.
+
+    Membaca api_key & model dari runtime settings (data/settings.json)
+    dengan prioritas tertinggi, fallback ke .env.
+    """
 
     def __init__(
         self,
@@ -132,25 +186,51 @@ class GeminiProvider(AIProvider):
         max_output_tokens: int | None = None,
         min_seconds_between_requests: float | None = None,
     ) -> None:
-        self._api_key = api_key or settings.gemini_api_key
-        self._model_name = model_name or settings.gemini_model
+        # Baca dari runtime settings (prioritas tertinggi).
+        # Import di dalam __init__ untuk hindari circular import.
+        try:
+            from app.services.runtime_settings import get_effective_settings
+            runtime = get_effective_settings()
+        except Exception:
+            runtime = {}
+
+        self._api_key = (
+            api_key
+            or runtime.get("gemini_api_key")
+            or settings.gemini_api_key
+        )
+        self._model_name = (
+            model_name
+            or runtime.get("gemini_model")
+            or settings.gemini_model
+        )
         self._timeout_seconds = timeout_seconds
         self._max_network_retries = max_network_retries
         self._retry_backoff_seconds = retry_backoff_seconds
-        self._max_output_tokens = (
-            max_output_tokens if max_output_tokens is not None else settings.gemini_max_output_tokens
-        )
-        self._min_seconds_between_requests = (
-            min_seconds_between_requests
-            if min_seconds_between_requests is not None
-            else settings.gemini_min_seconds_between_requests
-        )
+
+        if max_output_tokens is not None:
+            self._max_output_tokens = max_output_tokens
+        else:
+            self._max_output_tokens = int(
+                runtime.get("gemini_max_output_tokens", settings.gemini_max_output_tokens)
+            )
+
+        if min_seconds_between_requests is not None:
+            self._min_seconds_between_requests = min_seconds_between_requests
+        else:
+            self._min_seconds_between_requests = float(
+                runtime.get(
+                    "gemini_min_seconds_between_requests",
+                    settings.gemini_min_seconds_between_requests,
+                )
+            )
+
         self._last_request_time: float = 0.0
 
         if not self._api_key:
             raise ValueError(
-                "GEMINI_API_KEY belum diset. Isi nilainya pada file .env "
-                "(lihat .env.example)."
+                "GEMINI_API_KEY belum diset. Silakan masukkan di panel Pengaturan "
+                "atau isi file .env (lihat .env.example)."
             )
 
         genai.configure(api_key=self._api_key)
@@ -160,9 +240,7 @@ class GeminiProvider(AIProvider):
         Jeda otomatis sebelum tiap request, supaya jarak antar-request ke
         Gemini tidak lebih rapat dari `min_seconds_between_requests`.
 
-        Ini pengaman terhadap limit RPM (requests per minute) free tier -
-        berlaku baik dipanggil untuk 1 chunk maupun banyak batch berturutan
-        dalam satu request /api/analyze.
+        Pengaman terhadap limit RPM (requests per minute) free tier.
         """
         if self._min_seconds_between_requests <= 0:
             return
@@ -210,16 +288,17 @@ class GeminiProvider(AIProvider):
                     f"(timeout/unavailable/rate limit): {exc}"
                 ) from exc
 
+            except _PERMANENT_GOOGLE_EXCEPTIONS as exc:
+                self._last_request_time = time.time()
+                raise AIProviderError(_humanize_google_error(exc)) from exc
+
             except AIProviderError:
                 raise
 
             except Exception as exc:
                 self._last_request_time = time.time()
-                # Error non-transient (mis. API key tidak valid, request
-                # diblokir kebijakan konten, dsb.) - tidak perlu di-retry.
                 raise AIProviderError(f"Gagal memanggil Gemini API: {exc}") from exc
 
-        # Seharusnya tidak pernah sampai sini, tapi jaga-jaga.
         raise AIProviderError(f"Gemini API gagal: {last_error}")
 
 
@@ -241,7 +320,8 @@ def _extract_text_from_response(response: Any) -> str:
 
 def get_ai_provider() -> AIProvider:
     """
-    Factory function - satu-satunya tempat yang perlu diubah jika provider
-    AI diganti di kemudian hari (misalnya ke OpenAIProvider).
+    Factory function — baca runtime settings setiap kali dipanggil.
+    Jadi kalau user ubah API key/model di panel Pengaturan, langsung
+    berlaku untuk request berikutnya tanpa restart server.
     """
     return GeminiProvider()

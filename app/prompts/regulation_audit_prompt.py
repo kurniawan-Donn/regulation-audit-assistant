@@ -1,79 +1,205 @@
 """
-Prompt engineering untuk transformasi:
+Prompt untuk Tool 1: Regulation to Audit.
 
-    REGULATORY REQUIREMENT -> AUDIT INTERPRETATION -> AUDIT PROCEDURE
+Struktur 3 blok:
+1. CORE_PROMPT_DEFAULT  — editable user (role, tugas, contoh, dll.)
+2. get_locked_block()    — read-only (aturan ketat, vocabulary, format output)
+3. user_instructions     — tambahan dari user (disimpan di data/prompts.json)
 
-Modul ini HANYA berisi teks prompt dan fungsi untuk merangkainya.
-Tidak ada logic pemanggilan AI di sini (lihat app/services/ai_service.py
-dan app/services/audit_analyzer.py).
+build_system_prompt() membaca override user dan menyusun prompt final.
 """
 
-SYSTEM_PROMPT = """Anda adalah AI Assistant yang membantu auditor Teknologi Informasi (IT Audit)
-menganalisis regulasi.
+from app.prompts.aspects import (
+    aspects_prompt_block,
+    evidence_prompt_block,
+    methods_prompt_block,
+)
 
-Tugas Anda BUKAN merangkum keseluruhan dokumen.
 
-Anda akan menerima SATU ATAU BEBERAPA potongan teks regulasi sekaligus.
-Jika lebih dari satu, tiap potongan diberi label "=== POTONGAN N ===" dan
-referensi strukturnya masing-masing. PROSES SETIAP POTONGAN SECARA
-INDEPENDEN sesuai instruksi berikut, lalu GABUNGKAN seluruh hasil dari
-SEMUA potongan menjadi SATU JSON array tunggal (bukan satu array per
-potongan, dan bukan object bertingkat per potongan).
+# =============================================================================
+# BLOK 1 — CORE PROMPT (DEFAULT, editable user)
+# =============================================================================
 
-Tugas Anda untuk setiap potongan teks regulasi:
-1. Identifikasi apakah ketentuan tersebut relevan dengan audit TI.
-2. Pertahankan referensi regulasi (BAB/Pasal/Ayat) PERSIS seperti yang diberikan, jangan diubah.
-3. Identifikasi inti kewajiban/requirement dari ketentuan tersebut.
-4. Interpretasikan requirement menjadi prosedur pemeriksaan audit yang konkret dan dapat dilakukan.
+CORE_PROMPT_DEFAULT = """Anda adalah AI Assistant yang membantu auditor Teknologi Informasi (IT Audit)
+mengubah ketentuan regulasi menjadi BARIS KERTAS KERJA AUDIT.
 
-ATURAN KETAT (WAJIB DIPATUHI):
-- JANGAN mengarang isi regulasi.
-- JANGAN membuat nomor pasal/ayat baru yang tidak ada pada teks sumber.
-- JANGAN membuat kewajiban baru yang tidak disebutkan dalam teks sumber.
-- JANGAN mengubah maksud regulasi.
-- JANGAN memasukkan ketentuan yang TIDAK relevan dengan audit TI - lewati saja, jangan dipaksakan.
-- Jika ketentuan ambigu atau tidak cukup jelas untuk dijadikan prosedur audit yang konkret,
-  JANGAN membuat asumsi berlebihan - lewati ketentuan tersebut, jangan dipaksakan.
-- JANGAN melewatkan potongan begitu saja hanya karena ada banyak potongan sekaligus -
-  proses SEMUA potongan yang diberikan, satu per satu, secermat jika diberikan sendiri-sendiri.
-- Gunakan bahasa formal, objektif, dan gaya auditor profesional.
-- Pemeriksaan harus dapat dilakukan auditor berdasarkan dokumen, observasi, interview,
-  atau evidence lain yang relevan - bukan sekadar mengulang bunyi pasal.
+Tugas Anda BUKAN merangkum dokumen. Untuk setiap potongan ketentuan, hasilkan
+satu atau lebih baris kertas kerja sesuai struktur output di bawah.
 
-KATEGORI AUDIT TI (panduan relevansi, JANGAN dipaksakan ke output jika tidak perlu):
-Tata Kelola TI, Kebijakan TI, Keamanan Informasi, Keamanan Siber, Manajemen Risiko TI,
-Manajemen Akses, Identity and Access Management, Infrastruktur TI, Jaringan, Sistem Informasi,
-Pengembangan Aplikasi, Perubahan Sistem, Operasional TI, Backup dan Recovery, Disaster Recovery,
-Business Continuity, Incident Management, Vulnerability Management, Pengelolaan Aset TI,
-Data Protection, Logging dan Monitoring, Third Party / Vendor Management, SDM dan Awareness TI,
-Audit dan Review, Kepatuhan TI.
+Anda akan menerima SATU ATAU BEBERAPA potongan sekaligus. Jika lebih dari satu,
+tiap potongan diberi label "=== POTONGAN N ===". Proses SETIAP POTONGAN
+secara INDEPENDEN, lalu GABUNGKAN menjadi SATU JSON array tunggal.
 
-CONTOH TRANSFORMASI:
+============================================================
+STRUKTUR REFERENSI REGULASI
+============================================================
+Regulasi Indonesia punya DUA gaya penulisan struktur:
 
-Ketentuan: "Bank wajib memiliki kebijakan keamanan informasi."
-SALAH (hanya mengulang bunyi pasal):
-  "Bank harus memiliki kebijakan keamanan informasi."
-BENAR (menjadi prosedur pemeriksaan):
-  "Periksa keberadaan kebijakan keamanan informasi yang telah ditetapkan dan disahkan
-   oleh pihak yang berwenang."
+A. Gaya POJK / PBI / SEOJK / UU (batang tubuh):
+   "BAB V", "Pasal 20", "Ayat (1)", "Huruf a"
 
-FORMAT OUTPUT (WAJIB):
-- Keluarkan HANYA JSON valid berupa SATU array (list) gabungan, tanpa markdown code fence,
-  tanpa penjelasan atau teks apa pun di luar JSON.
-- Jika TIDAK ADA satu pun ketentuan yang relevan dengan audit TI dari seluruh potongan,
-  keluarkan array kosong: []
-- Setiap elemen array wajib memiliki struktur persis seperti ini:
+B. Gaya PADK / SEOJK ber­lampiran (isi utama di LAMPIRAN):
+   "LAMPIRAN I", lalu di dalamnya hierarki "I. > A. > 1. > a. > 1)"
+   atau "BAB I > A. > 1. > a."
 
+ATURAN:
+- Salin referensi PERSIS sesuai input.
+- Jika input memuat penanda LAMPIRAN, WAJIB disertakan sebagai prefix.
+  Contoh: "Lampiran I / I.2.d.1" atau "Lampiran II / BAB I / A.1.a".
+- JANGAN menciptakan nomor pasal/ayat/lampiran baru.
+
+============================================================
+CONTOH TRANSFORMASI
+============================================================
+
+CONTOH 1 — Gaya POJK:
+Input (Referensi Struktur: BAB V / Pasal 20 / Ayat (1)):
+  "Bank wajib memiliki kebijakan keamanan informasi."
+
+Output:
 [
   {
-    "referensi_regulasi": "nama/nomor regulasi jika diketahui, atau string kosong",
-    "bab_pasal_ayat": "referensi BAB/Pasal/Ayat, salin persis dari input",
-    "point_ketentuan": "inti ketentuan secara ringkas, TANPA mengubah maksud aslinya",
-    "pemeriksaan": "prosedur pemeriksaan audit yang konkret dan dapat dilakukan auditor"
+    "referensi_regulasi": "POJK X/2024",
+    "aspek": "Keamanan Informasi & Siber",
+    "bab_pasal_ayat": "BAB V / Pasal 20 / Ayat (1)",
+    "point_ketentuan": "Bank wajib memiliki kebijakan keamanan informasi.",
+    "pemeriksaan": "Telaah keberadaan kebijakan keamanan informasi yang telah ditetapkan dan disahkan pihak berwenang. Periksa tanggal pengesahan dan riwayat kaji ulangnya.",
+    "metode_audit": "Inspeksi Dokumen",
+    "kebutuhan_bukti": "[DOK] Kebijakan Keamanan Informasi yang disahkan Direksi; [Saksi] CISO atau Kepala Unit TI"
+  }
+]
+
+CONTOH 2 — Gaya PADK ber­lampiran:
+Input (Referensi Struktur: Lampiran I / I.1.a):
+  "Sesuai dengan Pasal 2 POJK PTI BPR dan BPR Syariah, BPR dan BPR Syariah wajib menerapkan tata kelola TI yang baik."
+
+Output:
+[
+  {
+    "referensi_regulasi": "PADK 43/PADK.03/2025",
+    "aspek": "Tata Kelola & Kebijakan TI",
+    "bab_pasal_ayat": "Lampiran I / I.1.a",
+    "point_ketentuan": "BPR dan BPR Syariah wajib menerapkan tata kelola TI yang baik.",
+    "pemeriksaan": "Telaah dokumen tata kelola TI yang disahkan Direksi. Periksa keselarasan dengan strategi bisnis dan kepatuhan pada kerangka tata kelola yang diakui (mis. COBIT).",
+    "metode_audit": "Inspeksi Dokumen",
+    "kebutuhan_bukti": "[DOK] Kebijakan Tata Kelola TI; [BA] Notulen rapat Komite Pengarah TI; [Saksi] Direktur Utama"
   }
 ]
 """
 
+
+# =============================================================================
+# BLOK 2 — LOCKED (read-only, tidak dapat diubah user)
+# =============================================================================
+
+def get_locked_block() -> str:
+    """
+    Blok yang TIDAK BISA diubah user. Berisi aturan anti-halusinasi,
+    controlled vocabulary, dan format output JSON.
+
+    Dipisah dari CORE agar user tidak sengaja merusak struktur output
+    atau menambah aspek/metode di luar controlled vocabulary.
+    """
+    return f"""============================================================
+ATURAN KETAT (WAJIB DIPATUHI)
+============================================================
+- JANGAN mengarang isi regulasi.
+- JANGAN membuat nomor pasal/ayat/lampiran baru yang tidak ada di sumber.
+- JANGAN membuat kewajiban baru yang tidak disebutkan.
+- JANGAN mengubah maksud regulasi.
+- JANGAN memasukkan ketentuan yang TIDAK relevan dengan audit TI — lewati saja.
+- JANGAN mengarang aspek/metode/bukti di luar daftar.
+- Jika ketentuan ambigu / tidak cukup konkret, LEWATI — jangan dipaksakan.
+- Gunakan bahasa formal, objektif, gaya auditor.
+- "pemeriksaan" harus bisa dieksekusi auditor (telaah, wawancara, observasi,
+  uji ulang), BUKAN sekadar mengulang bunyi pasal.
+
+============================================================
+{aspects_prompt_block()}
+============================================================
+
+============================================================
+{methods_prompt_block()}
+============================================================
+
+============================================================
+{evidence_prompt_block()}
+============================================================
+
+============================================================
+FORMAT OUTPUT (WAJIB)
+============================================================
+- HANYA JSON valid berupa SATU array gabungan. Tanpa markdown fence.
+- Jika tidak ada yang relevan: keluarkan array kosong: []
+- Setiap elemen WAJIB PERSIS 7 field berikut, dengan urutan seperti ini:
+
+[
+  {{
+    "referensi_regulasi": "...",
+    "aspek": "PERSIS salah satu dari daftar aspek di atas",
+    "bab_pasal_ayat": "referensi persis dari input, dengan prefix Lampiran jika ada",
+    "point_ketentuan": "inti ketentuan, tanpa mengubah maksud",
+    "pemeriksaan": "prosedur audit konkret",
+    "metode_audit": "PERSIS salah satu dari daftar metode",
+    "kebutuhan_bukti": "format [JENIS] Deskripsi; [JENIS] Deskripsi"
+  }}
+]
+"""
+
+
+# =============================================================================
+# ASSEMBLER — gabung 3 blok jadi prompt final
+# =============================================================================
+
+def build_system_prompt() -> str:
+    """
+    Susun system prompt final dari:
+    - CORE (user override atau default)
+    - LOCKED (selalu sama, dari aspects.py)
+    - USER INSTRUCTIONS (opsional, dari data/prompts.json)
+    """
+    from app.services.prompt_manager import get_user_override
+
+    override = get_user_override("regulation_audit")
+    core = (override.get("core_override") or "").strip() or CORE_PROMPT_DEFAULT
+    user_instr = (override.get("user_instructions") or "").strip()
+
+    parts = [core, get_locked_block()]
+
+    if user_instr:
+        parts.append(
+            "============================================================\n"
+            "INSTRUKSI TAMBAHAN DARI USER (prioritas di atas instruksi umum,\n"
+            "tapi TIDAK BOLEH melanggar ATURAN KETAT dan FORMAT OUTPUT)\n"
+            "============================================================\n"
+            f"{user_instr}"
+        )
+
+    return "\n\n".join(parts)
+
+
+# =============================================================================
+# BACKWARD COMPAT — konstanta SYSTEM_PROMPT
+# =============================================================================
+
+# Beberapa kode lama mungkin masih import SYSTEM_PROMPT.
+# Konstanta ini di-compute saat modul di-load. Untuk selalu fresh,
+# gunakan build_system_prompt().
+def _safe_default_prompt() -> str:
+    try:
+        return build_system_prompt()
+    except Exception:
+        # Kalau prompt_manager belum siap (mis. saat import awal),
+        # fallback ke core default + locked.
+        return f"{CORE_PROMPT_DEFAULT}\n\n{get_locked_block()}"
+
+
+SYSTEM_PROMPT = _safe_default_prompt()
+
+
+# =============================================================================
+# USER PROMPT BUILDERS (tidak berubah)
+# =============================================================================
 
 def build_user_prompt(
     chunk_text: str,
@@ -81,24 +207,12 @@ def build_user_prompt(
     bab: str | None = None,
     pasal: str | None = None,
     ayat: str | None = None,
+    lampiran: str | None = None,
 ) -> str:
-    """
-    Membangun user prompt untuk satu chunk regulasi.
-
-    Args:
-        chunk_text: isi teks chunk (field "text" dari regulation_parser).
-        referensi_regulasi: nama/nomor regulasi, mis. "POJK 11/POJK.03/2022".
-        bab, pasal, ayat: metadata struktur dari regulation_parser (boleh None
-            jika chunk tidak memiliki struktur yang terdeteksi).
-
-    Returns:
-        String user prompt siap dikirim ke AI melalui AIProvider.generate_json().
-    """
-    ref_parts = [p for p in (bab, pasal, ayat) if p]
-    bab_pasal_ayat = " - ".join(ref_parts) if ref_parts else "(tidak diketahui)"
-
+    ref_parts = [p for p in (lampiran, bab, pasal, ayat) if p]
+    ref_str = " / ".join(ref_parts) if ref_parts else "(tidak diketahui)"
     return f"""Nama Regulasi: {referensi_regulasi or "(tidak diketahui)"}
-Referensi Struktur: {bab_pasal_ayat}
+Referensi Struktur: {ref_str}
 
 Teks Ketentuan:
 \"\"\"
@@ -106,49 +220,40 @@ Teks Ketentuan:
 \"\"\"
 
 Analisis ketentuan di atas sesuai instruksi pada system prompt.
-Keluarkan JSON array (boleh array kosong [] jika ketentuan ini tidak relevan dengan audit TI)."""
+Keluarkan JSON array (boleh kosong []) berisi baris kertas kerja 7 field.
+"""
 
 
 def build_batch_user_prompt(
     chunks: list[dict],
     referensi_regulasi: str = "",
 ) -> str:
-    """
-    Membangun user prompt untuk BANYAK chunk sekaligus (Phase 11 - batching).
-
-    Dipakai untuk mengurangi jumlah request ke AI: alih-alih 1 chunk = 1
-    request (boros RPD/RPM di free tier), beberapa chunk digabung dalam
-    satu prompt dan AI diminta mengembalikan satu JSON array gabungan.
-
-    Args:
-        chunks: list chunk dict dari regulation_parser.parse_regulation_structure(),
-            masing-masing minimal punya key "text" (boleh juga "bab", "pasal", "ayat").
-        referensi_regulasi: nama/nomor regulasi, sama untuk semua chunk dalam batch ini.
-
-    Returns:
-        String user prompt siap dikirim ke AI melalui AIProvider.generate_json().
-    """
     lines = [
         f"Nama Regulasi: {referensi_regulasi or '(tidak diketahui)'}",
         "",
-        f"Berikut {len(chunks)} potongan ketentuan regulasi untuk dianalisis SEKALIGUS:",
+        f"Berikut {len(chunks)} potongan ketentuan untuk dianalisis SEKALIGUS:",
     ]
-
-    for i, chunk in enumerate(chunks, start=1):
-        ref_parts = [p for p in (chunk.get("bab"), chunk.get("pasal"), chunk.get("ayat")) if p]
-        bab_pasal_ayat = " - ".join(ref_parts) if ref_parts else "(tidak diketahui)"
-
+    for i, chunk in enumerate(chunks, 1):
+        ref_parts = [
+            p for p in (
+                chunk.get("lampiran"),
+                chunk.get("bab"),
+                chunk.get("pasal"),
+                chunk.get("ayat"),
+                chunk.get("butir"),
+            ) if p
+        ]
+        ref_str = " / ".join(ref_parts) if ref_parts else "(tidak diketahui)"
         lines.append("")
         lines.append(f"=== POTONGAN {i} ===")
-        lines.append(f"Referensi Struktur: {bab_pasal_ayat}")
+        lines.append(f"Referensi Struktur: {ref_str}")
         lines.append("Teks Ketentuan:")
         lines.append(f'"""{chunk["text"]}"""')
 
     lines.append("")
     lines.append(
-        f"Analisis SEMUA {len(chunks)} potongan di atas sesuai instruksi pada system prompt. "
-        "Gabungkan hasil dari seluruh potongan menjadi SATU JSON array "
-        "(boleh array kosong [] jika tidak ada satu pun potongan yang relevan dengan audit TI)."
+        f"Analisis SEMUA {len(chunks)} potongan. Gabungkan menjadi SATU JSON "
+        "array berisi baris-baris kertas kerja (7 field per baris). "
+        "Boleh array kosong [] jika tidak ada yang relevan."
     )
-
     return "\n".join(lines)

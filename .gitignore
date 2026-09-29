@@ -1,26 +1,73 @@
-# Environment
+# ============================================================
+# Environment & Secrets (JANGAN COMMIT!)
+# ============================================================
 .env
+.env.local
+.env.*.local
 venv/
 env/
 .venv/
 
+# ============================================================
+# Runtime Data (berisi API key + data user)
+# ============================================================
+data/
+data/*.json
+!data/.gitkeep
+
+# ============================================================
+# Uploaded & Generated Files
+# ============================================================
+uploads/*
+!uploads/.gitkeep
+
+outputs/*
+!outputs/.gitkeep
+outputs/requirements/*
+!outputs/requirements/.gitkeep
+
+# Cache (berisi konten regulasi + parsed preview)
+cache/
+cache/previews/*
+cache/parsed/*
+!cache/.gitkeep
+
+# ============================================================
 # Python
+# ============================================================
 __pycache__/
 *.py[cod]
 *$py.class
 *.egg-info/
 .pytest_cache/
+.pytest_cache
+.coverage
+htmlcov/
+build/
+dist/
 
-# Uploaded & generated files (jangan commit dokumen regulasi / hasil audit)
-uploads/*
-!uploads/.gitkeep
-outputs/*
-!outputs/.gitkeep
-
-# OS / editor
+# ============================================================
+# OS / Editor
+# ============================================================
 .DS_Store
 .idea/
 .vscode/
+*.swp
+*.swo
+*~
+Thumbs.db
 
-# Logs
+# ============================================================
+# Logs & Temporary
+# ============================================================
 *.log
+logs/
+*.tmp
+*.bak
+*.backup
+
+# ============================================================
+# Database (kalau ada nanti)
+# ============================================================
+*.sqlite3
+*.db
